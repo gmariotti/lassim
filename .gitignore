@@ -1,0 +1,9 @@
+# PyCharm stuff
+.idea/
+*.iml
+
+# Python stuff
+.pyc
+
+# Custom stuff
+OUTPUT/
