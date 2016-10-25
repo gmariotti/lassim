@@ -1,9 +1,10 @@
-import csv
-import errno
-import os
+import logging
 
 import numpy as np
+import pandas as pd
 from sortedcontainers import SortedSet, SortedDict
+
+from utilities.type_aliases import Float, Vector
 
 """
 The parsers are used for tabular separated files.
@@ -17,63 +18,102 @@ The patient data must be a tabular file with the following headers
 
 The time sequence must be a tabular file with the following headers
 ["t0", "t1", ..., "tn"]
+
+The perturbations files must be a tabular file with the following headers
+["<source1>, ..., "<source_n>", "t_start", "t_end"]
 """
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.1"
+__version__ = "0.1.0"
 
 
-def open_file(func):
-    def wrapper(filename):
-        if os.path.isfile(filename):
-            with open(filename) as file_to_read:
-                return func(file_to_read)
-        else:
-            # TODO - logging
-            print("{} not found.".format(filename))
-            exit(errno.ENOENT)
+def parse_network(filename: str, sep: str = "\t") -> SortedDict:
+    # expected headers in a network file
+    h_source = "source"
+    h_target = "target"
 
-    return wrapper
-
-
-@open_file
-def parse_network(filename):
-    reader = csv.DictReader(filename, delimiter="\t")
+    net_file = pd.read_csv(filename, sep=sep)
     network = SortedDict()
-    for row in reader:
-        target = row["target"]
-        tfact = row["source"]
-        if tfact not in network.keys():
-            network[tfact] = SortedSet()
-        network[tfact].add(target)
+    if not {h_source, h_target}.issubset(net_file.columns):
+        logging.getLogger(__name__).error(
+            "Missing headers {} and/or {} in {}".format(
+                h_source, h_target, filename
+            ))
+        raise AttributeError("Not valid network headers, check log.")
+
+    for (index, series) in net_file.iterrows():
+        target = series[h_target]
+        source = series[h_source]
+        if source not in network.keys():
+            network[source] = SortedSet()
+        network[source].add(target)
 
     return network
 
 
-@open_file
-def parse_patient_data(filename, dtype=np.float64):
-    reader = csv.DictReader(filename, delimiter="\t")
-    data_dictionary = SortedDict()
-    # TODO - check validity
-    # what it should do is to remove just the TF field and order the other
-    # based on the fact that the list is t0 to tn
-    fields = reader.fieldnames.copy()
-    fields.remove("source")
-    time_headers = SortedSet(fields)
-    for row in reader:
-        tfact = row["source"]
-        data_dictionary[tfact] = np.array([row[head] for head in time_headers],
-                                          dtype=dtype)
+def parse_network_data(filename: str, sep: str = "\t",
+                       d_type: np.dtype = Float) -> SortedDict:
+    # expected headers in a network data file
+    h_source = "source"
+
+    data = pd.read_csv(filename, sep=sep)
+    if h_source not in data.columns:
+        logging.getLogger(__name__).error(
+            "Missing header {} in {}".format(h_source, filename)
+        )
+        raise AttributeError("Not valid data headers, check log.")
+
+    # check that the correct time headers are present
+    columns = len(data.columns)
+    valid_t_headers = set(["t{}".format(i) for i in range(0, columns - 1)])
+    if not valid_t_headers.issubset(data.columns):
+        logging.getLogger(__name__).error(
+            "Expected headers for time are {}".format(valid_t_headers)
+        )
+        raise AttributeError("Not valid data headers, check log.")
+
+    data_dictionary = SortedDict(
+        {value[h_source]: np.array(value.drop([h_source]).values, dtype=d_type)
+         for (i, value) in data.iterrows()
+         }
+    )
+
     return data_dictionary
 
 
-@open_file
-def parse_time_sequence(filename, dtype=np.uint32):
-    reader = csv.DictReader(filename, delimiter="\t")
-    # TODO - check validity
-    time_headers = SortedSet(reader.fieldnames)
-    return np.array([row[header] for row in reader
-                     for header in time_headers],
-                    dtype=dtype)
+def parse_time_sequence(filename: str, sep: str = "\t",
+                        d_type: np.dtype = np.uint32) -> Vector:
+    times = pd.read_csv(filename, sep=sep)
+    # check validity of headers
+    columns = len(times.columns)
+    valid_headers = set(["t{}".format(i) for i in range(0, columns)])
+    if not valid_headers.issubset(times.columns):
+        logging.getLogger(__name__).error(
+            "Expected headers for time series are {}".format(valid_headers)
+        )
+        raise AttributeError("Not valid time series headers, check log.")
+
+    return np.array(times.values, dtype=d_type).flatten()
+
+
+def parse_perturbations_data(filename: str, sep: str = "\t") -> Vector:
+    perturbations = pd.read_csv(filename, sep=sep)
+
+    # check validity of times headers
+    h_tstart = "t_start"
+    h_tend = "t_end"
+    start_idx = len(perturbations.columns) - 2
+    # takes the list of the last two headers
+    headers = set(perturbations.ix[:, start_idx:].columns)
+    valid_headers = {h_tstart, h_tend}
+    if headers != valid_headers:
+        # they are not the same set
+        logging.getLogger(__name__).error(
+            "Expected last two headers for perturbations are {}".format(
+                valid_headers
+            ))
+        raise AttributeError("Not valid perturbations headers, check log.")
+
+    return perturbations.values

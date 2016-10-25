@@ -2,17 +2,17 @@ from copy import deepcopy
 from typing import Tuple, Callable, List
 
 import numpy as np
-from PyGMO.problem import base
 
-from utilities.type_aliases import Vector
+from core.lassim_problem import LassimProblem, LassimProblemFactory
+from utilities.type_aliases import Vector, Float, Tuple2V, Tuple3V
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.1"
+__version__ = "0.1.0"
 
 
-class CoreProblem(base):
+class CoreProblem(LassimProblem):
     """
     This class is a representation of the optimization problem of a core in
     a network. It is completely independent on how the equations system is
@@ -20,8 +20,8 @@ class CoreProblem(base):
     """
 
     def __init__(self, dim: int, bounds: Tuple[List[float], List[float]],
-                 cost_data: Tuple[Vector, Vector, Vector],
-                 map_tuple: Tuple[Vector, Vector],
+                 cost_data: Tuple3V,
+                 map_tuple: Tuple2V,
                  y0: Vector, ode_function: Callable[
                 [Vector, Vector, Tuple[Vector, Vector, Vector, int]], Vector
             ]):
@@ -30,10 +30,20 @@ class CoreProblem(base):
 
         # only arguments that should be public
         self.vector_map, self.vector_map_mask = map_tuple
+        if self.vector_map.shape != self.vector_map_mask.shape:
+            raise ValueError(
+                "Map shape {} is different from mask shape {}".format(
+                    self.vector_map.shape, self.vector_map_mask.shape
+                ))
 
-        # TODO - validity check on data?
         # set parameters for objective function
         self._data, self._sigma, self._time = cost_data
+        if self._data.shape != self._sigma.shape:
+            raise ValueError(
+                "Data shape {} is different from sigma shape {}".format(
+                    self._data.shape, self._sigma.shape
+                ))
+
         self._y0 = y0
         self._size = y0.size
 
@@ -50,12 +60,14 @@ class CoreProblem(base):
         :param x: Tuple containing the value of each parameter to optimize
         :return: A tuple of a single value, containing the cost
         """
-        solution_vector = np.fromiter(x, dtype=np.float64)
+        solution_vector = np.fromiter(x, dtype=Float)
 
         results = self._ode_function(
             self._y0, self._time,
             (solution_vector, self.vector_map, self.vector_map_mask, self._size)
         )
+        # FIXME - handle the case in which one of the value in np.amax(results)
+        # is 0, in order to avoid 0/0 = nan case
         norm_results = results / np.amax(results, axis=0)
         cost = np.sum(np.power((self._data - norm_results) / self._sigma, 2))
 
@@ -77,37 +89,96 @@ class CoreProblem(base):
         return self.__get_deepcopy__()
 
 
-class CoreProblemFactory:
+class CoreWithPerturbationsProblem(CoreProblem):
+    def __init__(self, dim: int, bounds: Tuple[List[float], List[float]],
+                 cost_data: Tuple3V, map_tuple: Tuple2V, y0: Vector,
+                 ode_function: Callable[
+                     [Vector, Vector,
+                      Tuple[Vector, Vector, Vector, int]], Vector
+                 ],
+                 pert_function: Callable[
+                     [Vector, int, Vector,
+                      Tuple[Vector, Vector, Vector, int],
+                      Callable[[Vector, Vector, Vector, Vector], float]], float
+                 ],
+                 pert_data: Vector):
+        super(CoreWithPerturbationsProblem, self).__init__(
+            dim, bounds, cost_data, map_tuple, y0, ode_function
+        )
+        self._pert_function = pert_function
+
+        # the perturbation data should be already formatted for the perturbation
+        # function in order to make the problem as general as possible
+        self._pert_data = pert_data
+
+    def _objfun_impl(self, x):
+        # TODO - cost and new_cost are assumed independent from each other
+        # possible improvement can be to run one of them asynchronously
+        cost = super(CoreWithPerturbationsProblem, self)._objfun_impl(x)[0]
+        sol_vector = np.fromiter(x, dtype=Float)
+        new_cost = self._pert_function(
+            self._pert_data, self._size, self._y0,
+            (sol_vector, self.vector_map, self.vector_map_mask, self._size),
+            self._ode_function
+        )
+
+        return (new_cost + cost,)
+
+    def __get_deepcopy__(self):
+        copy = CoreWithPerturbationsProblem(
+            dim=self.dimension, bounds=deepcopy(self._bounds),
+            cost_data=(self._data, self._sigma, self._time),
+            map_tuple=(self.vector_map.copy(), self.vector_map_mask.copy()),
+            y0=self._y0.copy(), ode_function=self._ode_function,
+            pert_function=self._pert_function, pert_data=self._pert_data
+        )
+        return copy
+
+
+class CoreProblemFactory(LassimProblemFactory):
     """
     Factory class for getting a reference to a building function used to create
-    multiple instances of a CoreProblem, or CoreWithKnockProblem, with a set of
-    standard data.
+    multiple instances of a CoreProblem, or CoreWithPerturbationsProblem, with a
+    set of standard data.
     """
 
     def __init__(self, cost_data: Tuple, y0: Vector, ode_function: Callable[
         [Vector, Vector, Tuple[Vector, Vector, Vector, int]], Vector
+    ], pert_function: Callable[
+        [Vector, int, Vector, Tuple[Vector, Vector, Vector, int],
+         Callable[[Vector, Vector, Vector], Vector]], float
     ]):
         self._ode_func = ode_function
+        self._pert_func = pert_function
+        # divides data considering presence or not of perturbations data
+        if len(cost_data) == 4:
+            self._pert_data = cost_data[3]
+            cost_data = (cost_data[0], cost_data[1], cost_data[2])
         self._cost_data = cost_data
         self._y0 = y0
 
     @classmethod
     def new_instance(cls, cost_data: Tuple, y0: Vector, ode_function: Callable[
         [Vector, Vector, Tuple[Vector, Vector, Vector, int]], Vector
-    ]) -> 'CoreProblemFactory':
-        factory = CoreProblemFactory(cost_data, y0, ode_function)
+    ], pert_function: Callable[
+        [Vector, int, Vector, Tuple[Vector, Vector, Vector, int],
+         Callable[[Vector, Vector, Vector], Vector]], float
+    ] = None) -> 'CoreProblemFactory':
+        factory = CoreProblemFactory(cost_data, y0, ode_function, pert_function)
         return factory
 
     def build(self, dim: int, bounds: Tuple[List[float], List[float]],
-              reactions: Tuple[Vector, Vector]) -> CoreProblem:
+              vector_map: Tuple2V) -> CoreProblem:
         if len(self._cost_data) == 3:
-            # problem without knock data
-            return CoreProblem(
-                dim, bounds, self._cost_data, reactions,
-                self._y0, self._ode_func
-            )
-        elif len(self._cost_data) == 4:
-            # problem with knock data TODO
-            raise NotImplementedError("Knock data problem not yet implemented")
+            if self._pert_func is None:
+                return CoreProblem(
+                    dim, bounds, self._cost_data, vector_map,
+                    self._y0, self._ode_func
+                )
+            else:
+                return CoreWithPerturbationsProblem(
+                    dim, bounds, self._cost_data, vector_map,
+                    self._y0, self._ode_func, self._pert_func, self._pert_data
+                )
         else:
             raise RuntimeError("Number of elements in cost_data is not valid")

@@ -1,17 +1,17 @@
 from typing import Callable, Dict, Tuple
-import psutil
 
+import psutil
 from PyGMO import topology
 from sortedcontainers import SortedDict, SortedList
 
-from core.core_problem import CoreProblem, CoreProblemFactory
 from core.core_system import CoreSystem
+from core.lassim_problem import LassimProblem, LassimProblemFactory
 from core.solutions_handler import SolutionsHandler
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.1"
+__version__ = "0.1.0"
 
 
 class BaseOptimization:
@@ -20,8 +20,8 @@ class BaseOptimization:
     Still undecided if iteration must go there or not.
     """
 
-    def __init__(self, prob_factory: CoreProblemFactory,
-                 problem: Tuple[CoreProblem, SortedDict],
+    def __init__(self, prob_factory: LassimProblemFactory,
+                 problem: Tuple[LassimProblem, SortedDict],
                  iter_func: Callable[..., bool]):
         self._probl_factory = prob_factory
         self._start_problem = problem

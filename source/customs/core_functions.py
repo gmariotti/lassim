@@ -1,8 +1,10 @@
 import logging
 from copy import deepcopy
-from typing import List, Tuple
+from multiprocessing.pool import Pool
+from typing import List, Tuple, Callable
 
 import numpy as np
+from numpy import linalg
 from sortedcontainers import SortedDict
 
 from core.core_problem import CoreProblem, CoreProblemFactory
@@ -12,7 +14,7 @@ from utilities.type_aliases import Vector
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.1"
+__version__ = "0.1.0"
 
 
 def default_bounds(num_tfacts: int, num_react: int
@@ -112,8 +114,68 @@ def iter_function(factory: CoreProblemFactory, solution: Solution
         new_problem = factory.build(
             dim=len(new_reactions.keys()) * 2 + num_react,
             bounds=default_bounds(len(new_reactions.keys()), num_react),
-            reactions=(new_react, new_mask),
+            vector_map=(new_react, new_mask),
         )
         return (new_problem, new_reactions), True
     else:
         return None, False
+
+
+# TODO - can be better to have multiple perturbation functions in a new file?
+def lassim_perturbation_function(pert_data: Vector, num_tf: int,
+                                 y0: Vector,
+                                 ode_args: Tuple[Vector, Vector, Vector, int],
+                                 ode: Callable[[Vector, Vector, Vector], Vector]
+                                 ) -> float:
+    # starts a pool of processes based on the number of transcription factors
+    pool = Pool(num_tf)
+
+    # first num_tf elements of each row is the value of the perturbations,
+    # while the remaining elements of each row are start time and end time
+    perturbations = pert_data[:, :num_tf]
+    pert_diag = np.diagonal(perturbations)
+    times = pert_data[:, num_tf:]
+
+    ones = np.ones(num_tf)
+    # TODO - can be done in numpy somehow?
+    values = []
+    for i in range(0, num_tf):
+        ones[i] = pert_diag[i]
+        values.append((ones.copy(), times[i], y0, ode_args, ode))
+    # FIXME - can be made asynchronous with pool.astarmap
+    results = pool.starmap(pool_function, values)
+    # each row contains the vale in results
+    sim_fold = np.array(results)
+    pool.terminate()
+
+    nsim_fold = sim_fold - 1
+    nsim_fold[nsim_fold > 2] = 2
+    lstsq_min = linalg.lstsq(
+        np.reshape(nsim_fold, (nsim_fold.size, 1)), perturbations.flatten()
+    )
+    cost = np.sum(np.power(nsim_fold * lstsq_min[0], 2))
+
+    return cost
+
+
+# it can't be in the previous function because it can't be pickled between
+# processes
+def pool_function(variations: Vector, time_seq: Vector, y0: Vector,
+                  ode_args: Tuple[Vector, Vector, Vector, int],
+                  ode: Callable[[Vector, Vector, Vector], Vector]
+                  ) -> Vector:
+    # called in another process, all is variables are protected from
+    # concurrency problems
+    sim_control = ode(y0, time_seq, ode_args)
+    solution_vector = ode_args[0]
+    v_size = variations.size
+    # lambdas are changed based on the values in variations
+    # runs in another process, so solution_vector is protected from
+    # race conditions
+    # first v_size arguments are the lambdas values
+    solution_vector[:v_size] = solution_vector[:v_size] * variations
+    simulation = ode(y0, time_seq, ode_args)
+    # time0 should not be considered
+    tsize = time_seq.size
+    ret_value = sim_control[tsize - 1:] / simulation[tsize - 1:]
+    return ret_value.flatten()

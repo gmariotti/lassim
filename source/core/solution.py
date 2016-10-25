@@ -1,16 +1,15 @@
 from copy import deepcopy
-from typing import Tuple
 
 import numpy as np
 from PyGMO import champion
 from sortedcontainers import SortedDict
 
-from utilities.type_aliases import Vector, Float
+from utilities.type_aliases import Vector, Float, Tuple2V
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.1"
+__version__ = "0.1.0"
 
 
 class Solution:
@@ -19,7 +18,7 @@ class Solution:
     """
 
     def __init__(self, champ: champion, react_ids: SortedDict,
-                 reactions: Tuple[Vector, Vector]):
+                 reactions: Tuple2V):
         self.result = champ
         self.solution = champ.x
         self.cost = champ.f[0]

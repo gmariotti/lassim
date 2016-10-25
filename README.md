@@ -10,7 +10,7 @@ those data has to date been restricted to crude, statistical tools with importan
 mechanisms, e.g. feedback loops, being overlooked. The omitting of such high influence details 
 in a large scale network remains a major problem in today’s omics based environment and is a 
 key aspect of truly understanding any complex disease. Therefore, we herein present the 
-LASSIM (LArge Scale SIMulation based network identification) toolbox, which revolves around the 
+**LASSIM** (**LA**rge **S**cale **SIM**ulation based network identification) toolbox, which revolves around the 
 expansion of a well determined mechanistic ODE-model into the entire system.
 
 With this toolbox is possible to run a default implementation of `lassim`, but also to
@@ -36,8 +36,9 @@ The toolbox has been developed on Python 3.5, using the environment offered by [
 
 The list of **mandatory** dependencies is:
 
-- [NumPy 1.11.1/SciPy 1.17.1](http://www.scipy.org/)
 - [PyGMO 1.1.7](http://esa.github.io/pygmo/index.html)
+- [NumPy 1.11.1/SciPy 1.17.1](http://www.scipy.org/)
+- [pandas 1.18.1](http://pandas.pydata.org/)
 - [sortedcontainers 1.5.3](http://www.grantjenks.com/docs/sortedcontainers/)
 
 For some tips on how to install PyGMO, look at [Suggestions for PyGMO installation](#Suggestions-for-PyGMO-installation).
@@ -84,3 +85,9 @@ running the program:
 to modify line 397 of the `pagmo/CMakeLists.txt` file has shown below.
 
 `TARGET_LINK_LIBRARIES(main pagmo_static ${MANDATORY_LIBRARIES})`
+
+Known Issues
+------------
+- Seems like that versions of [SciPy](http://www.scipy.org/) greater than the one in [Installation](#Installation) are missing **libstdc++.so** or 
+have a version of it different from **GLIBCXX_3.4.21**. If you're using [Anaconda](https://anaconda.org/), version [4.1.1](https://repo.continuum.io/archive/index.html) is the best one 
+to install, at least for now.

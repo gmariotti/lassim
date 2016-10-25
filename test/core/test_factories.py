@@ -11,13 +11,14 @@ from core.optimizations.basin_hopping import BHOptimization
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.1"
+__version__ = "0.1.0"
 
 
 class TestOptimizationFactory(TestCase):
     def setUp(self):
         self.factory = CoreProblemFactory.new_instance(
-            (np.ones(1), np.ones(1), np.ones(1)), np.ones(1), None)
+            (np.ones(1), np.ones(1), np.ones(1)), np.ones(1), None
+        )
         self.problem = self.factory.build(
             1, ([0], [1]), (np.ones(1), np.array([True]))
         )

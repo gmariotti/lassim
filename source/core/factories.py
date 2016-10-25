@@ -3,14 +3,14 @@ from typing import Callable, Tuple
 from sortedcontainers import SortedDict
 
 from core.base_optimization import BaseOptimization
-from core.core_problem import CoreProblem, CoreProblemFactory
+from core.lassim_problem import LassimProblem, LassimProblemFactory
 from core.optimizations.basin_hopping import BHOptimization
 from core.optimizations.differential_evolution import DEOptimization
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.1"
+__version__ = "0.1.0"
 
 
 class OptimizationFactory:
@@ -30,8 +30,8 @@ class OptimizationFactory:
 
     @classmethod
     def new_optimization_instance(cls, opt_type: str,
-                                  prob_builder: CoreProblemFactory,
-                                  problem: Tuple[CoreProblem, SortedDict],
+                                  prob_builder: LassimProblemFactory,
+                                  problem: Tuple[LassimProblem, SortedDict],
                                   evols: int,
                                   iter_func: Callable[..., bool] = None
                                   ) -> Callable[..., BaseOptimization]:

@@ -13,7 +13,7 @@ from utilities.logger_setup import LoggerSetup
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.1"
+__version__ = "0.1.0"
 
 messages = {
     # MANDATORY
@@ -22,6 +22,7 @@ messages = {
     "time-series": "The file path of the time series in which the data where "
                    "collected.",
     "input-sigma": "The file path of the sigma for evaluation - TODO remove",
+    "input-pert": "The file path of the perturbations file.",
 
     # OPTIONAL
     "optimization-type": "Type of optimization algorithm to use. "
@@ -70,6 +71,8 @@ def set_files_args(parser: ArgumentParser):
     # TODO - to be deleted
     group.add_argument("inputS", metavar="input-sigma",
                        help=messages["input-sigma"])
+    group.add_argument("--perturbations", metavar="input-perturbations",
+                       help=messages["input-pert"])
 
 
 def set_optimization_args(parser: ArgumentParser):
@@ -132,17 +135,26 @@ def get_files_args(args) -> Dict[str, str]:
     if not os.path.isfile(args.inputS):
         logger.error("File {} doesn't exist".format(args.inputS))
         exit(0)
+
+    files = {
+        "network": args.inputN,
+        "data": args.inputD,
+        "time": args.inputT,
+        "sigma": args.inputS,
+    }
+    pert_file = getattr(args, "perturbations")
+    if pert_file is not None and not os.path.isfile(pert_file):
+        logger.error("File {} doesn't exist.".format(pert_file))
+        exit(0)
     logger.info("Network file is {}".format(args.inputN))
     logger.info("Data file is {}".format(args.inputD))
     logger.info("Time series file is {}".format(args.inputT))
     logger.info("Sigma file is {}".format(args.inputS))
+    if pert_file is not None:
+        logger.info("Perturbations file is {}".format(pert_file))
+        files["perturbations"] = pert_file
 
-    return {
-        "network": args.inputN,
-        "data": args.inputD,
-        "time": args.inputT,
-        "sigma": args.inputS
-    }
+    return files
 
 
 def get_optimization_args(args) -> (str, Dict):

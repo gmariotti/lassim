@@ -6,15 +6,15 @@ from PyGMO import algorithm, topology, archipelago
 from sortedcontainers import SortedDict, SortedList, SortedListWithKey
 
 from core.base_optimization import BaseOptimization
-from core.core_problem import CoreProblem, CoreProblemFactory
 from core.core_system import CoreSystem
+from core.lassim_problem import LassimProblemFactory, LassimProblem
 from core.solution import Solution
 from core.solutions_handler import SolutionsHandler
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.1"
+__version__ = "0.1.0"
 
 
 class DEOptimization(BaseOptimization):
@@ -25,14 +25,17 @@ class DEOptimization(BaseOptimization):
 
     type_name = "Differential Evolution"
 
-    def __init__(self, prob_factory: CoreProblemFactory,
-                 problem: Tuple[CoreProblem, SortedDict], evolutions: int,
+    def __init__(self, prob_factory: LassimProblemFactory,
+                 problem: Tuple[LassimProblem, SortedDict], evolutions: int,
                  iter_func: Callable[..., bool]):
         super(DEOptimization, self).__init__(prob_factory, problem, iter_func)
         # default settings for algorithm
         self._algorithm = algorithm.de()
         self._logger = logging.getLogger(__name__)
         self._evol = evolutions
+
+        # can be useful to save all the archipelagos used for each optimization
+        self._archipelagos = SortedList()
 
     def build(self, handler: SolutionsHandler, core: CoreSystem,
               **kwargs) -> 'DEOptimization':
@@ -89,7 +92,7 @@ class DEOptimization(BaseOptimization):
             self._logger.error("Returning solutions found so far")
         return solutions
 
-    def _generate_solution(self, problem: Tuple[CoreProblem, SortedDict],
+    def _generate_solution(self, problem: Tuple[LassimProblem, SortedDict],
                            n_individuals: int, n_threads: int, topol
                            ) -> Solution:
         """
@@ -102,6 +105,7 @@ class DEOptimization(BaseOptimization):
         )
         archi.evolve(self._evol)
         archi.join()
+        self._archipelagos.append(archi)
         solution = self._get_best_solution(
             archi, problem
         )
@@ -109,7 +113,7 @@ class DEOptimization(BaseOptimization):
 
     # not side-effect free but at least I isolated it
     def _get_best_solution(self, archi: archipelago,
-                           prob: Tuple[CoreProblem, SortedDict]) -> Solution:
+                           prob: Tuple[LassimProblem, SortedDict]) -> Solution:
         """
         From an archipelago, generates the list of with the best solution for
         each island, pass them to an instance of SolutionHandler and then
