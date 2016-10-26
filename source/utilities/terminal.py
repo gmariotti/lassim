@@ -32,6 +32,9 @@ messages = {
     "cores": "Number of cores used for optimization. Default for this system"
              " is {}.",
     "evolutions": "Number of evolutions for each archipelago.",
+    "pert-factor": "Indicates the importance of the perturbations in the "
+                   "objective function. Must be a value between 0 and 1. "
+                   "Default is 1",
     "log": "Sets the name of the file where to save the logs other than on "
            "screen.",
     "verbosity": "Increase verbosity of logs from WARNING to INFO.",
@@ -53,9 +56,10 @@ def parse_terminal(setup: LoggerSetup
     # retrieve input from terminal
     args = parser.parse_args()
     get_logger_args(args, setup)
-    files = get_files_args(args)
+    files, is_pert = get_files_args(args)
     output = get_output_args(args)
     optimization_args = get_optimization_args(args)
+    optimization_args.log_args(logging.getLogger(__name__), is_pert)
 
     return files, output, optimization_args
 
@@ -89,6 +93,9 @@ def set_optimization_args(parser: ArgumentParser):
     group.add_argument("-e", "--evolutions", metavar="num",
                        default=1, type=int,
                        help=messages["evolutions"])
+    group.add_argument("--perturbations-factor", metavar="num",
+                       default=1, type=float,
+                       help=messages["pert-factor"])
 
 
 def set_logger_args(parser: ArgumentParser):
@@ -121,7 +128,7 @@ def get_logger_args(args, setup: LoggerSetup):
         logging.getLogger(__name__).info("log file is {}".format(args.log))
 
 
-def get_files_args(args) -> Dict[str, str]:
+def get_files_args(args) -> (Dict[str, str], bool):
     logger = logging.getLogger(__name__)
     if not os.path.isfile(args.inputN):
         logger.error("File {} doesn't exist".format(args.inputN))
@@ -150,36 +157,39 @@ def get_files_args(args) -> Dict[str, str]:
     logger.info("Data file is {}".format(args.inputD))
     logger.info("Time series file is {}".format(args.inputT))
     logger.info("Sigma file is {}".format(args.inputS))
+
+    is_pert = False
     if pert_file is not None:
         logger.info("Perturbations file is {}".format(pert_file))
         files["perturbations"] = pert_file
+        is_pert = True
 
-    return files
+    return files, is_pert
 
 
-def get_optimization_args(args) -> (str, Dict):
+def get_optimization_args(args) -> OptimizationArgs:
     algorithm = OptimizationFactory.get_optimization_type(args.optimization)
     params = {}
     param_filename = args.parameters
     if param_filename is not None and os.path.isfile(param_filename):
         with open(param_filename) as params_json:
             params = json.load(params_json)
-    logger = logging.getLogger(__name__)
-    logger.info("Algorithm used is {}".format(algorithm))
 
     # get cores - checks if the user puts 0 or less. In this case uses the
     # default number in this system
     cores = args.cores
     if cores <= 0:
         cores = psutil.cpu_count()
-    logger.info("Number of cores is {}".format(cores))
 
     evols = args.evolutions
     if args.evolutions <= 0:
         evols = 1
-    logger.info("Number of evolutions for archipelago is {}".format(evols))
 
-    return OptimizationArgs(algorithm, params, cores, evols)
+    pert_factor = getattr(args, "perturbations_factor")
+    if pert_factor < 0 or pert_factor > 1:
+        pert_factor = 1
+
+    return OptimizationArgs(algorithm, params, cores, evols, pert_factor)
 
 
 def get_output_args(args) -> (str, int):

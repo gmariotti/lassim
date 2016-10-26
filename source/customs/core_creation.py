@@ -50,7 +50,8 @@ def optimization_setup(files: Dict[str, str], opt_args: OptimizationArgs,
     if is_pert_prob:
         problem_builder = CoreProblemFactory.new_instance(
             (*files_tuple, perturbations), y0,
-            odeint1e8_function, lassim_perturbation_function
+            odeint1e8_function, lassim_perturbation_function,
+            opt_args.pert_factor
         )
         logging.getLogger(__name__).info(
             "Created builder for problem with perturbations."

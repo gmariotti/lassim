@@ -1,3 +1,4 @@
+from logging import Logger
 from typing import Callable, Dict, Tuple
 
 import psutil
@@ -44,7 +45,7 @@ class BaseOptimization:
 # TODO - similar to a context, consider refactoring
 class OptimizationArgs:
     def __init__(self, opt_type: str, params: Dict, num_cores: int,
-                 evolutions: int):
+                 evolutions: int, pert_factor: float):
         self.type = opt_type
         self.params = params
         self._num_cores = num_cores
@@ -53,3 +54,19 @@ class OptimizationArgs:
             self._num_cores = psutil.cpu_count()
         self.num_islands = self._num_cores
         self.evolutions = evolutions
+        self.pert_factor = pert_factor
+
+    def log_args(self, logger: Logger, is_pert: bool = False):
+        """
+        Used to log the optimization arguments inserted by the user.
+        :param logger: the logging object to use
+        :param is_pert: if the presence of the perturbations factor has to be
+        logged or not.
+        """
+        logger.info("Algorithm used is {}".format(self.type))
+        logger.info("Number of cores is {}".format(self._num_cores))
+        logger.info("Number of evolutions for archipelago is {}".format(
+            self.evolutions
+        ))
+        if is_pert:
+            logger.info("Perturbations factor is {}".format(self.pert_factor))

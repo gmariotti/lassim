@@ -101,7 +101,7 @@ class CoreWithPerturbationsProblem(CoreProblem):
                       Tuple[Vector, Vector, Vector, int],
                       Callable[[Vector, Vector, Vector, Vector], float]], float
                  ],
-                 pert_data: Vector):
+                 pert_data: Vector, pert_factor: float):
         super(CoreWithPerturbationsProblem, self).__init__(
             dim, bounds, cost_data, map_tuple, y0, ode_function
         )
@@ -110,6 +110,7 @@ class CoreWithPerturbationsProblem(CoreProblem):
         # the perturbation data should be already formatted for the perturbation
         # function in order to make the problem as general as possible
         self._pert_data = pert_data
+        self._factor = pert_factor
 
     def _objfun_impl(self, x):
         # TODO - cost and new_cost are assumed independent from each other
@@ -122,7 +123,9 @@ class CoreWithPerturbationsProblem(CoreProblem):
             self._ode_function
         )
 
-        return (new_cost + cost,)
+        # tested on ipython - float factor seems faster than a np.ndarray of one
+        # element
+        return (self._factor * new_cost + cost,)
 
     def __get_deepcopy__(self):
         copy = CoreWithPerturbationsProblem(
@@ -147,7 +150,7 @@ class CoreProblemFactory(LassimProblemFactory):
     ], pert_function: Callable[
         [Vector, int, Vector, Tuple[Vector, Vector, Vector, int],
          Callable[[Vector, Vector, Vector], Vector]], float
-    ]):
+    ], pert_factor: float):
         self._ode_func = ode_function
         self._pert_func = pert_function
         # divides data considering presence or not of perturbations data
@@ -156,6 +159,7 @@ class CoreProblemFactory(LassimProblemFactory):
             cost_data = (cost_data[0], cost_data[1], cost_data[2])
         self._cost_data = cost_data
         self._y0 = y0
+        self._pert_factor = pert_factor
 
     @classmethod
     def new_instance(cls, cost_data: Tuple, y0: Vector, ode_function: Callable[
@@ -163,8 +167,10 @@ class CoreProblemFactory(LassimProblemFactory):
     ], pert_function: Callable[
         [Vector, int, Vector, Tuple[Vector, Vector, Vector, int],
          Callable[[Vector, Vector, Vector], Vector]], float
-    ] = None) -> 'CoreProblemFactory':
-        factory = CoreProblemFactory(cost_data, y0, ode_function, pert_function)
+    ] = None, pert_factor: float = 0) -> 'CoreProblemFactory':
+        factory = CoreProblemFactory(
+            cost_data, y0, ode_function, pert_function, pert_factor
+        )
         return factory
 
     def build(self, dim: int, bounds: Tuple[List[float], List[float]],
@@ -178,7 +184,8 @@ class CoreProblemFactory(LassimProblemFactory):
             else:
                 return CoreWithPerturbationsProblem(
                     dim, bounds, self._cost_data, vector_map,
-                    self._y0, self._ode_func, self._pert_func, self._pert_data
+                    self._y0, self._ode_func,
+                    self._pert_func, self._pert_data, self._pert_factor
                 )
         else:
             raise RuntimeError("Number of elements in cost_data is not valid")
