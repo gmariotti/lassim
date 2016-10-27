@@ -13,6 +13,6 @@ __version__ = "0.1.0"
 
 Vector = np.ndarray
 Float = np.float64
-# TODO - replace them with the implementation commented near them
+# FIXME - replace them with the implementation commented near them
 Tuple2V = Tuple[Vector, Vector]  # Tuple2[T] = Tuple[T, T]
 Tuple3V = Tuple[Vector, Vector, Vector]  # Tuple3[T] = Tuple[T, T, T]

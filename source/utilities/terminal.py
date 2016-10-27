@@ -18,10 +18,10 @@ __version__ = "0.1.0"
 messages = {
     # MANDATORY
     "input-network": "The file path of the transcription factors network.",
-    "input-data": "The file path of the data to analyze.",
+    "input-data": "The files path of the data to analyze. "
+                  "Expected at least two files",
     "time-series": "The file path of the time series in which the data where "
                    "collected.",
-    "input-sigma": "The file path of the sigma for evaluation - TODO remove",
     "input-pert": "The file path of the perturbations file.",
 
     # OPTIONAL
@@ -32,6 +32,7 @@ messages = {
     "cores": "Number of cores used for optimization. Default for this system"
              " is {}.",
     "evolutions": "Number of evolutions for each archipelago.",
+    "individuals": "Number of individuals used in the optimization algorithm.",
     "pert-factor": "Indicates the importance of the perturbations in the "
                    "objective function. Must be a value between 0 and 1. "
                    "Default is 1",
@@ -43,9 +44,9 @@ messages = {
 }
 
 
-def parse_terminal(setup: LoggerSetup
+def parse_terminal(name: str, setup: LoggerSetup
                    ) -> (Dict[str, str], Tuple[str, int], OptimizationArgs):
-    parser = ArgumentParser(__name__)
+    parser = ArgumentParser(name)
 
     # set terminal options
     set_files_args(parser)
@@ -68,13 +69,12 @@ def set_files_args(parser: ArgumentParser):
     group = parser.add_argument_group("input data")
     group.add_argument("inputN", metavar="input-network",
                        help=messages["input-network"])
-    group.add_argument("inputD", metavar="input-data",
+    # group.add_argument("inputD", metavar="input-data",
+    #                    help=messages["input-data"])
+    group.add_argument("inputD", metavar="input-data", nargs="+",
                        help=messages["input-data"])
     group.add_argument("inputT", metavar="time-series",
                        help=messages["time-series"])
-    # TODO - to be deleted
-    group.add_argument("inputS", metavar="input-sigma",
-                       help=messages["input-sigma"])
     group.add_argument("--perturbations", metavar="input-perturbations",
                        help=messages["input-pert"])
 
@@ -93,6 +93,9 @@ def set_optimization_args(parser: ArgumentParser):
     group.add_argument("-e", "--evolutions", metavar="num",
                        default=1, type=int,
                        help=messages["evolutions"])
+    group.add_argument("-i", "--individuals", metavar="num",
+                       default=5, type=int,
+                       help=messages["individuals"])
     group.add_argument("--perturbations-factor", metavar="num",
                        default=1, type=float,
                        help=messages["pert-factor"])
@@ -117,7 +120,7 @@ def set_output_args(parser: ArgumentParser):
 
 
 def get_logger_args(args, setup: LoggerSetup):
-    # TODO - I don't like it
+    # FIXME - I don't like it
     level = logging.WARNING
     if args.verbosity:
         level = logging.INFO
@@ -133,30 +136,29 @@ def get_files_args(args) -> (Dict[str, str], bool):
     if not os.path.isfile(args.inputN):
         logger.error("File {} doesn't exist".format(args.inputN))
         exit(0)
-    if not os.path.isfile(args.inputD):
-        logger.error("File {} doesn't exist".format(args.inputD))
+    if len(args.inputD) < 2:
+        logger.error("Expected two or more input files for data")
         exit(0)
+    for input_file in args.inputD:
+        if not os.path.isfile(input_file):
+            logger.error("File {} doesn't exist".format(args.inputD))
+            exit(0)
     if not os.path.isfile(args.inputT):
         logger.error("File {} doesn't exist".format(args.inputT))
-        exit(0)
-    if not os.path.isfile(args.inputS):
-        logger.error("File {} doesn't exist".format(args.inputS))
         exit(0)
 
     files = {
         "network": args.inputN,
         "data": args.inputD,
         "time": args.inputT,
-        "sigma": args.inputS,
     }
     pert_file = getattr(args, "perturbations")
     if pert_file is not None and not os.path.isfile(pert_file):
         logger.error("File {} doesn't exist.".format(pert_file))
         exit(0)
     logger.info("Network file is {}".format(args.inputN))
-    logger.info("Data file is {}".format(args.inputD))
+    logger.info("Data file are {}".format(str(",").join(args.inputD)))
     logger.info("Time series file is {}".format(args.inputT))
-    logger.info("Sigma file is {}".format(args.inputS))
 
     is_pert = False
     if pert_file is not None:
@@ -182,14 +184,20 @@ def get_optimization_args(args) -> OptimizationArgs:
         cores = psutil.cpu_count()
 
     evols = args.evolutions
-    if args.evolutions <= 0:
+    if evols <= 0:
         evols = 1
+
+    individuals = args.individuals
+    if individuals <= 0:
+        individuals = 5
 
     pert_factor = getattr(args, "perturbations_factor")
     if pert_factor < 0 or pert_factor > 1:
         pert_factor = 1
 
-    return OptimizationArgs(algorithm, params, cores, evols, pert_factor)
+    return OptimizationArgs(
+        algorithm, params, cores, evols, individuals, pert_factor
+    )
 
 
 def get_output_args(args) -> (str, int):

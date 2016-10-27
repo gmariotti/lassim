@@ -38,11 +38,16 @@ class CoreProblem(LassimProblem):
 
         # set parameters for objective function
         self._data, self._sigma, self._time = cost_data
-        if self._data.shape != self._sigma.shape:
+
+        # check that data and sigma are compatible
+        try:
+            np.broadcast(self._data, self._sigma)
+        except ValueError:
             raise ValueError(
-                "Data shape {} is different from sigma shape {}".format(
+                "Data shape {} is incompatible with sigma shape {}".format(
                     self._data.shape, self._sigma.shape
                 ))
+        self._sigma2 = np.power(self._sigma, 2)
 
         self._y0 = y0
         self._size = y0.size
@@ -69,7 +74,8 @@ class CoreProblem(LassimProblem):
         # FIXME - handle the case in which one of the value in np.amax(results)
         # is 0, in order to avoid 0/0 = nan case
         norm_results = results / np.amax(results, axis=0)
-        cost = np.sum(np.power((self._data - norm_results) / self._sigma, 2))
+        # cost = np.sum(np.power((self._data - norm_results) / self._sigma, 2))
+        cost = np.sum(np.power((self._data - norm_results), 2) / self._sigma2)
 
         return (cost,)
 
@@ -113,11 +119,11 @@ class CoreWithPerturbationsProblem(CoreProblem):
         self._factor = pert_factor
 
     def _objfun_impl(self, x):
-        # TODO - cost and new_cost are assumed independent from each other
+        # TODO - cost and pert_cost are assumed independent from each other
         # possible improvement can be to run one of them asynchronously
         cost = super(CoreWithPerturbationsProblem, self)._objfun_impl(x)[0]
         sol_vector = np.fromiter(x, dtype=Float)
-        new_cost = self._pert_function(
+        pert_cost = self._pert_function(
             self._pert_data, self._size, self._y0,
             (sol_vector, self.vector_map, self.vector_map_mask, self._size),
             self._ode_function
@@ -125,7 +131,7 @@ class CoreWithPerturbationsProblem(CoreProblem):
 
         # tested on ipython - float factor seems faster than a np.ndarray of one
         # element
-        return (self._factor * new_cost + cost,)
+        return (self._factor * pert_cost + cost,)
 
     def __get_deepcopy__(self):
         copy = CoreWithPerturbationsProblem(
@@ -133,7 +139,8 @@ class CoreWithPerturbationsProblem(CoreProblem):
             cost_data=(self._data, self._sigma, self._time),
             map_tuple=(self.vector_map.copy(), self.vector_map_mask.copy()),
             y0=self._y0.copy(), ode_function=self._ode_function,
-            pert_function=self._pert_function, pert_data=self._pert_data
+            pert_function=self._pert_function, pert_data=self._pert_data,
+            pert_factor=self._factor
         )
         return copy
 

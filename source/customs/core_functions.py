@@ -98,7 +98,7 @@ def remove_lowest_reaction(vres: Vector, reactions: SortedDict
     raise IndexError("Index {} to remove not found!!".format(min_index))
 
 
-# TODO - move to a default file not related to the Core
+# FIXME - move to a default file not related to the Core
 def iter_function(factory: CoreProblemFactory, solution: Solution
                   ) -> (Tuple[CoreProblem, SortedDict], bool):
     react_mask = solution.react_mask

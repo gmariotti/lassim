@@ -39,6 +39,11 @@ def function_integrate(y: Vector, t: Vector, solution: Vector,
     # don't worry about RuntimeWarning for np.exp overflow. Even if a value
     # become inf, because is at the denominator it will make the result equal
     # to 0
+
+    # numexpr seems 3 times slower than normal numpy. Maybe because the data
+    # are not so big?
+    # ones = np.ones(y.size, dtype=Float)
+    # return ne.evaluate("-lambdas * y + vmax / (ones + exp(-sum_mat))")
     return -lambdas * y + vmax / (
         np.ones(y.size, dtype=Float) + np.exp(-sum_mat)
     )

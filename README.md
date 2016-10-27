@@ -39,7 +39,7 @@ The list of **mandatory** dependencies is:
 - [PyGMO 1.1.7](http://esa.github.io/pygmo/index.html)
 - [NumPy 1.11.1/SciPy 1.17.1](http://www.scipy.org/)
 - [pandas 1.18.1](http://pandas.pydata.org/)
-- [sortedcontainers 1.5.3](http://www.grantjenks.com/docs/sortedcontainers/)
+- [sortedcontainers >= 1.5.3](http://www.grantjenks.com/docs/sortedcontainers/)
 
 For some tips on how to install PyGMO, look at [Suggestions for PyGMO installation](#Suggestions-for-PyGMO-installation).
 
@@ -57,7 +57,8 @@ but it will be further tested on the [NSC](https://www.nsc.liu.se) system availa
 What's next?
 ------------
 
-- Implementation of `CoreWithKnocksProblem` for handling the core creation problem in case knocks data are available.
+- Implementation of `CoreWithPerturbationsProblem` for handling the core creation problem in case 
+perturbations data are available.
 - Possibility of installing `source/core` as a Python package.
 - Implementation of Basin Hopping algorithm from [PyGMO](http://esa.github.io/pygmo/index.html)
 - Improvements on tests, documentation and code quality.

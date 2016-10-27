@@ -1,5 +1,4 @@
 import logging
-import pprint
 from typing import Dict
 
 import numpy as np
@@ -84,9 +83,11 @@ def optimization_setup(files: Dict[str, str], opt_args: OptimizationArgs,
 
 
 def optimization_run(optimization: BaseOptimization, num_islands: int,
-                     handler: SimpleCSVSolutionsHandler):
-    solutions = optimization.solve(n_threads=num_islands, n_individuals=10,
-                                   topol=topology.ring())
+                     num_individuals: int, handler: SimpleCSVSolutionsHandler):
+    solutions = optimization.solve(
+        n_threads=num_islands, n_individuals=num_individuals,
+        topol=topology.ring()
+    )
     handler.handle_solutions(solutions, "best_solutions.csv")
 
 
@@ -103,23 +104,20 @@ def data_parsing(files: Dict[str, str]) -> (Vector, Vector, Vector):
     """
     Generate the set of data used in the optimization from the file name
     :param files: Dictionary with the filenames containing the data
-    :return: ndarray for each file
+    :return: Vector for mean of data, standard deviation and time series
     """
     time_seq = parse_time_sequence(files["time"])
-    data_mean = parse_network_data(files["data"])
-    sigma = parse_network_data(files["sigma"])
+    data_list = [parse_network_data(data_file) for data_file in files["data"]]
 
-    # TODO - think how to put them outside of here
-    data_mean = np.array([value for key, value in data_mean.items()],
-                         dtype=Float).T
-    sigma = np.array([value for key, value in sigma.items()],
-                     dtype=Float).T
+    np_data_list = [
+        np.array([value for key, value in data.items()], dtype=Float).T
+        for data in data_list
+        ]
+    data_mean = np.array(np_data_list, dtype=Float).mean(axis=0)
+    # unbiased, divisor is N - 1
+    std_dev = np.std(np.array(np_data_list, dtype=Float), ddof=1, axis=0)
 
-    # TODO - debug
-    pprint.pprint(data_mean)
-    pprint.pprint(sigma)
-    pprint.pprint(time_seq)
-    return data_mean, sigma, time_seq
+    return data_mean, std_dev.mean(axis=0), time_seq
 
 
 def data_parse_perturbations(files: Dict[str, str], core: CoreSystem
@@ -152,8 +150,6 @@ def data_parse_perturbations(files: Dict[str, str], core: CoreSystem
         else:
             pert_data = np.empty(0)
 
-        # TODO - debug
-        pprint.pprint(pert_data)
         return is_present, pert_data
     except KeyError:
         return False, np.empty(0)

@@ -45,7 +45,7 @@ class BaseOptimization:
 # TODO - similar to a context, consider refactoring
 class OptimizationArgs:
     def __init__(self, opt_type: str, params: Dict, num_cores: int,
-                 evolutions: int, pert_factor: float):
+                 evolutions: int, individuals: int, pert_factor: float):
         self.type = opt_type
         self.params = params
         self._num_cores = num_cores
@@ -54,6 +54,7 @@ class OptimizationArgs:
             self._num_cores = psutil.cpu_count()
         self.num_islands = self._num_cores
         self.evolutions = evolutions
+        self.individuals = individuals
         self.pert_factor = pert_factor
 
     def log_args(self, logger: Logger, is_pert: bool = False):
@@ -67,6 +68,9 @@ class OptimizationArgs:
         logger.info("Number of cores is {}".format(self._num_cores))
         logger.info("Number of evolutions for archipelago is {}".format(
             self.evolutions
+        ))
+        logger.info("Number of individuals for each island is {}".format(
+            self.individuals
         ))
         if is_pert:
             logger.info("Perturbations factor is {}".format(self.pert_factor))
