@@ -25,6 +25,7 @@ def function_integrate(y: Vector, t: Vector, solution: Vector,
     :param size: number of transcription factors
     :return: The list of functions
     """
+    np.seterr(over="ignore")
     lambdas = solution[:size]
     vmax = solution[size: size * 2]
     k_values = solution[size * 2:]

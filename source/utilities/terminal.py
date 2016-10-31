@@ -31,16 +31,25 @@ messages = {
     "optimization-json": "JSON file with the parameters for optimization.",
     "cores": "Number of cores used for optimization. Default for this system"
              " is {}.",
-    "evolutions": "Number of evolutions for each archipelago.",
-    "individuals": "Number of individuals used in the optimization algorithm.",
+    "evolutions": "Number of evolutions for each archipelago. "
+                  "Default is {}.",
+    "individuals": "Number of individuals used in the optimization algorithm. "
+                   "Default is {}.",
     "pert-factor": "Indicates the importance of the perturbations in the "
                    "objective function. Must be a value between 0 and 1. "
-                   "Default is 1",
+                   "Default is {}.",
     "log": "Sets the name of the file where to save the logs other than on "
            "screen.",
     "verbosity": "Increase verbosity of logs from WARNING to INFO.",
     "output-dir": "Name of directory for output files.",
     "number-of-solutions": "For each iteration, number of solutions to save."
+}
+
+default = {
+    "cores": psutil.cpu_count(),
+    "evolutions": 1,
+    "individuals": 6,
+    "pert-factor": 1
 }
 
 
@@ -86,19 +95,24 @@ def set_optimization_args(parser: ArgumentParser):
                        help=messages["optimization-type"])
     group.add_argument("-p", "--parameters", metavar="json",
                        help=messages["optimization-json"])
-    default_cores = psutil.cpu_count()
     group.add_argument("-c", "--cores", metavar="num",
-                       default=default_cores, type=int,
-                       help=messages["cores"].format(default_cores))
+                       default=default["cores"], type=int,
+                       help=messages["cores"].format(default["cores"]))
     group.add_argument("-e", "--evolutions", metavar="num",
-                       default=1, type=int,
-                       help=messages["evolutions"])
+                       default=default["evolutions"], type=int,
+                       help=messages["evolutions"].format(
+                           default["evolutions"]
+                       ))
     group.add_argument("-i", "--individuals", metavar="num",
-                       default=5, type=int,
-                       help=messages["individuals"])
+                       default=default["individuals"], type=int,
+                       help=messages["individuals"].format(
+                           default["individuals"]
+                       ))
     group.add_argument("--perturbations-factor", metavar="num",
-                       default=1, type=float,
-                       help=messages["pert-factor"])
+                       default=default["pert-factor"], type=float,
+                       help=messages["pert-factor"].format(
+                           default["pert-factor"]
+                       ))
 
 
 def set_logger_args(parser: ArgumentParser):
@@ -181,19 +195,19 @@ def get_optimization_args(args) -> OptimizationArgs:
     # default number in this system
     cores = args.cores
     if cores <= 0:
-        cores = psutil.cpu_count()
+        cores = default["cores"]
 
     evols = args.evolutions
     if evols <= 0:
-        evols = 1
+        evols = default["evolutions"]
 
     individuals = args.individuals
     if individuals <= 0:
-        individuals = 5
+        individuals = default["individuals"]
 
     pert_factor = getattr(args, "perturbations_factor")
     if pert_factor < 0 or pert_factor > 1:
-        pert_factor = 1
+        pert_factor = default["pert-factor"]
 
     return OptimizationArgs(
         algorithm, params, cores, evols, individuals, pert_factor

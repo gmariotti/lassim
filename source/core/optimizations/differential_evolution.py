@@ -35,7 +35,8 @@ class DEOptimization(BaseOptimization):
         self._evol = evolutions
 
         # can be useful to save all the archipelagos used for each optimization
-        self._archipelagos = SortedList()
+        # FIXME
+        # self._archipelagos = SortedList()
 
     def build(self, handler: SolutionsHandler, core: CoreSystem,
               **kwargs) -> 'DEOptimization':
@@ -105,7 +106,8 @@ class DEOptimization(BaseOptimization):
         )
         archi.evolve(self._evol)
         archi.join()
-        self._archipelagos.append(archi)
+        # FIXME
+        # self._archipelagos.append(archi)
         solution = self._get_best_solution(
             archi, problem
         )
@@ -120,6 +122,7 @@ class DEOptimization(BaseOptimization):
         returns the best one.
         """
         champions = [isl.population.champion for isl in archi]
+        # FIXME - test it because seems like that the worst solution is taken
         solutions = SortedListWithKey(
             [Solution(champ, prob[1],
                       (prob[0].vector_map, prob[0].vector_map_mask))

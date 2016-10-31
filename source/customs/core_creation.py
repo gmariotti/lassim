@@ -14,7 +14,7 @@ from core.ode_functions import odeint1e8_function
 from core.serializers.csv_serializer import CSVSerializer
 from core.solutions_handler import SolutionsHandler
 from customs.core_functions import default_bounds, generate_reactions_vector, \
-    iter_function, lassim_perturbation_function
+    iter_function, perturbation_func_sequential
 from data_management.csv_format import parse_network, parse_time_sequence, \
     parse_network_data, parse_perturbations_data
 from utilities.type_aliases import Vector, Float
@@ -49,7 +49,7 @@ def optimization_setup(files: Dict[str, str], opt_args: OptimizationArgs,
     if is_pert_prob:
         problem_builder = CoreProblemFactory.new_instance(
             (*files_tuple, perturbations), y0,
-            odeint1e8_function, lassim_perturbation_function,
+            odeint1e8_function, perturbation_func_sequential,
             opt_args.pert_factor
         )
         logging.getLogger(__name__).info(
@@ -94,9 +94,7 @@ def optimization_run(optimization: BaseOptimization, num_islands: int,
 def create_core(network_file: str) -> CoreSystem:
     tf_network = parse_network(network_file)
     core = CoreSystem(tf_network)
-
-    # TODO - debug
-    core.print()
+    logging.getLogger(__name__).info(core)
     return core
 
 

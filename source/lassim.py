@@ -41,6 +41,6 @@ def lassim():
 if __name__ == "__main__":
     # FIXME - for now, ignore all overflow problems. The only situation in which
     # this occurs is with exp - doesn't work
-    np.seterr(over="ignore")
+    # np.seterr(over="ignore")
 
     lassim()

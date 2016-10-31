@@ -11,7 +11,7 @@ from core.core_problem import CoreProblemFactory
 from core.ode_functions import odeint1e8_function
 from core.solution import Solution
 from customs.core_functions import generate_reactions_vector, \
-    remove_lowest_reaction, default_bounds, lassim_perturbation_function, \
+    remove_lowest_reaction, default_bounds, perturbation_func_with_pool, \
     iter_function
 
 __author__ = "Guido Pio Mariotti"
@@ -45,7 +45,7 @@ class TestCoreFunctions(TestCase):
 
         self.factory = CoreProblemFactory.new_instance(
             (data, sigma, times, pert_data), y0, odeint1e8_function,
-            lassim_perturbation_function, pert_factor=1
+            perturbation_func_with_pool, pert_factor=1
         )
         self.fake_champion = champion()
         # 17 = 4lambdas + 4vmax + 9reactions
