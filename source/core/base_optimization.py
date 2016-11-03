@@ -1,12 +1,13 @@
 from logging import Logger
-from typing import Callable, Dict, Tuple
+from typing import Callable, Tuple, Dict
 
 import psutil
-from PyGMO import topology
-from sortedcontainers import SortedDict, SortedList
+from PyGMO import topology, archipelago
+from sortedcontainers import SortedDict, SortedList, SortedListWithKey
 
 from core.core_system import CoreSystem
 from core.lassim_problem import LassimProblem, LassimProblemFactory
+from core.solution import Solution
 from core.solutions_handler import SolutionsHandler
 
 __author__ = "Guido Pio Mariotti"
@@ -29,20 +30,89 @@ class BaseOptimization:
         self._iterate = iter_func
         self._handler = None
         self._core = None
+        self._logger = None
+        self._evol = 0
+        self._algorithm = None
 
     def build(self, handler: SolutionsHandler, core: CoreSystem, evols: int,
               **kwargs) -> 'BaseOptimization':
         raise NotImplementedError(self.build.__name__)
 
     def solve(self, n_threads: int, n_individuals: int,
-              topol=topology.unconnected) -> SortedList:
-        raise NotImplementedError(self.solve.__name__)
+              topol=topology.unconnected()) -> SortedList:
+        solutions = SortedListWithKey(key=Solution.get_cost)
+
+        try:
+            iteration = 1
+            solution = self._generate_solution(
+                self._start_problem, n_individuals, n_threads, topol
+            )
+            solutions.add(solution)
+            self._logger.info("({}) - New solution found.".format(iteration))
+
+            problem, do_iteration = self._iterate(self._probl_factory, solution)
+            while do_iteration:
+                solution = self._generate_solution(
+                    problem, n_individuals, n_threads, topol
+                )
+                solutions.add(solution)
+                iteration += 1
+                self._logger.info(
+                    "({}) - New solution found.".format(iteration))
+                problem, do_iteration = self._iterate(self._probl_factory,
+                                                      solution)
+            self._logger.info("Differential evolution completed.")
+        # FIXME - is horrible to have to catch all possible exceptions but
+        # requires a bit of time to understand all the possible exceptions
+        # that can be thrown.
+        except:
+            self._logger.exception("Exception occurred during solution...")
+            self._logger.error("Returning solutions found so far")
+        return solutions
+
+    def _generate_solution(self, problem: Tuple[LassimProblem, SortedDict],
+                           n_individuals: int, n_threads: int, topol
+                           ) -> Solution:
+        """
+        Creates a new archipelago to solve the problem with the DE algorithm.
+        It returns the best solution found after the optimization process.
+        """
+        archi = archipelago(
+            self._algorithm, problem[0], n_threads, n_individuals,
+            topology=topol
+        )
+        archi.evolve(self._evol)
+        archi.join()
+        # FIXME
+        # self._archipelagos.append(archi)
+        solution = self._get_best_solution(
+            archi, problem
+        )
+        return solution
+
+    # not side-effect free but at least I isolated it
+    def _get_best_solution(self, archi: archipelago,
+                           prob: Tuple[LassimProblem, SortedDict]) -> Solution:
+        """
+        From an archipelago, generates the list of with the best solution for
+        each island, pass them to an instance of SolutionHandler and then
+        returns the best one.
+        """
+        champions = [isl.population.champion for isl in archi]
+        # FIXME - test it because seems like that the worst solution is taken
+        solutions = SortedListWithKey(
+            [Solution(champ, prob[1],
+                      (prob[0].vector_map, prob[0].vector_map_mask))
+             for champ in champions],
+            key=Solution.get_cost
+        )
+        self._handler.handle_solutions(solutions)
+        return solutions[0]
 
     def print(self):
         raise NotImplementedError(self.print.__name__)
 
 
-# TODO - similar to a context, consider refactoring
 class OptimizationArgs:
     def __init__(self, opt_type: str, params: Dict, num_cores: int,
                  evolutions: int, individuals: int, pert_factor: float):

@@ -1,8 +1,10 @@
+# cython: profile=True
+
 from typing import Tuple
 
 from scipy import integrate
 
-from core.common_functions import function_integrate
+from core.functions.common_functions import lassim_function
 from utilities.type_aliases import Vector
 
 """
@@ -26,7 +28,7 @@ __version__ = "0.1.0"
 
 def odeint1e8_function(y0: Vector, t: Vector,
                        args: Tuple[Vector, Vector, Vector, int]) -> Vector:
-    return integrate.odeint(function_integrate, y0, t, args=args,
+    return integrate.odeint(lassim_function, y0, t, args=args,
                             mxstep=int(1e8))
 
 

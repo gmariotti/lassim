@@ -93,8 +93,9 @@ class CoreSystem:
                     "value -> {}".format(key, value)
                 )
 
-    def get_tfacts_num(self) -> int:
+    def _get_tfacts_num(self) -> int:
         return len(self.tfacts)
+    num_tfacts = property(_get_tfacts_num)
 
     def __str__(self):
         title = "== Core =="

@@ -1,3 +1,5 @@
+# cython: profile=True
+
 import numpy as np
 
 from utilities.type_aliases import Vector, Float
@@ -8,8 +10,8 @@ __license__ = "GNU General Public License v3.0"
 __version__ = "0.1.0"
 
 
-def function_integrate(y: Vector, t: Vector, solution: Vector,
-                       k_map: Vector, k_map_mask: Vector, size: int) -> Vector:
+def lassim_function(y: Vector, t: Vector, solution: Vector,
+                    k_map: Vector, k_map_mask: Vector, size: int) -> Vector:
     """
     Generates the list of functions to be "integrated"
     The form of the function is of the type

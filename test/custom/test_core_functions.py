@@ -8,11 +8,11 @@ from numpy.testing import assert_array_equal
 from sortedcontainers import SortedDict, SortedSet
 
 from core.core_problem import CoreProblemFactory
-from core.ode_functions import odeint1e8_function
+from core.functions.ode_functions import odeint1e8_function
 from core.solution import Solution
 from customs.core_functions import generate_reactions_vector, \
-    remove_lowest_reaction, default_bounds, perturbation_func_with_pool, \
-    iter_function
+    remove_lowest_reaction, default_bounds, iter_function
+from core.functions.perturbation_functions import perturbation_func_with_pool
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"

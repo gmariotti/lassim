@@ -26,7 +26,8 @@ messages = {
 
     # OPTIONAL
     "optimization-type": "Type of optimization algorithm to use. "
-                         "DE = Differential Evolution. "
+                         "DE = Differential Evolution.\n"
+                         "SAC = Simulated Annealing Corana's\n"
                          "Default value is DE",
     "optimization-json": "JSON file with the parameters for optimization.",
     "cores": "Number of cores used for optimization. Default for this system"
@@ -91,7 +92,7 @@ def set_files_args(parser: ArgumentParser):
 def set_optimization_args(parser: ArgumentParser):
     group = parser.add_argument_group("optimization")
     group.add_argument("-o", "--optimization",
-                       choices=["DE"], default="DE",
+                       choices=["DE", "SAC"], default="DE",
                        help=messages["optimization-type"])
     group.add_argument("-p", "--parameters", metavar="json",
                        help=messages["optimization-json"])
@@ -171,7 +172,7 @@ def get_files_args(args) -> (Dict[str, str], bool):
         logger.error("File {} doesn't exist.".format(pert_file))
         exit(0)
     logger.info("Network file is {}".format(args.inputN))
-    logger.info("Data file are {}".format(str(",").join(args.inputD)))
+    logger.info("Data file are {}".format(", ".join(args.inputD)))
     logger.info("Time series file is {}".format(args.inputT))
 
     is_pert = False

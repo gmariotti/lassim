@@ -9,12 +9,13 @@ from core.base_optimization import BaseOptimization, OptimizationArgs
 from core.core_problem import CoreProblemFactory
 from core.core_system import CoreSystem
 from core.factories import OptimizationFactory
+from core.functions.ode_functions import odeint1e8_function
+from core.functions.perturbation_functions import perturbation_func_sequential
 from core.handlers.simple_csv_handler import SimpleCSVSolutionsHandler
-from core.ode_functions import odeint1e8_function
 from core.serializers.csv_serializer import CSVSerializer
 from core.solutions_handler import SolutionsHandler
 from customs.core_functions import default_bounds, generate_reactions_vector, \
-    iter_function, perturbation_func_sequential
+    iter_function
 from data_management.csv_format import parse_network, parse_time_sequence, \
     parse_network_data, parse_perturbations_data
 from utilities.type_aliases import Vector, Float
@@ -63,8 +64,8 @@ def optimization_setup(files: Dict[str, str], opt_args: OptimizationArgs,
             "Created builder for problem without perturbations."
         )
     problem = problem_builder.build(
-        dim=(core.get_tfacts_num() * 2 + core.react_count),
-        bounds=default_bounds(core.get_tfacts_num(), core.react_count),
+        dim=(core.num_tfacts * 2 + core.react_count),
+        bounds=default_bounds(core.num_tfacts, core.react_count),
         vector_map=generate_reactions_vector(reactions_ids),
     )
     opt_builder = OptimizationFactory.new_optimization_instance(
@@ -136,7 +137,7 @@ def data_parse_perturbations(files: Dict[str, str], core: CoreSystem
         pert_data = parse_perturbations_data(pert_file)
         # checks data validity
         # checks if data shape is >= to (#tfacts, #tfacts)
-        num_tfacts = core.get_tfacts_num()
+        num_tfacts = core.num_tfacts
         if pert_data.shape >= (num_tfacts, num_tfacts):
             tfacts_pert_data = pert_data[:, :num_tfacts]
             # now checks if the data shape of data related to the transcription
