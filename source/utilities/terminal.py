@@ -25,20 +25,23 @@ messages = {
     "input-pert": "The file path of the perturbations file.",
 
     # OPTIONAL
-    "optimization-type": "Type of optimization algorithm to use. "
-                         "DE = Differential Evolution.\n"
-                         "SAC = Simulated Annealing Corana's\n"
-                         "Default value is DE",
-    "optimization-json": "JSON file with the parameters for optimization.",
-    "cores": "Number of cores used for optimization. Default for this system"
-             " is {}.",
-    "evolutions": "Number of evolutions for each archipelago. "
-                  "Default is {}.",
-    "individuals": "Number of individuals used in the optimization algorithm. "
-                   "Default is {}.",
-    "pert-factor": "Indicates the importance of the perturbations in the "
-                   "objective function. Must be a value between 0 and 1. "
-                   "Default is {}.",
+    # CORE OPTIONS
+    "c-opt-type": "Type of optimization algorithm to use for the Core. "
+                  "DE = Differential Evolution.\n"
+                  "SAC = Simulated Annealing Corana's\n"
+                  "Default value is DE",
+    "c-opt-json": "JSON file with the parameters for optimization of the Core.",
+    "c-cores": "Number of cores used for optimization of the Core. Default for "
+               "this system is {}.",
+    "c-evolutions": "Number of evolutions for each archipelago for the Core. "
+                    "Default is {}.",
+    "c-individuals": "Number of individuals used in the optimization algorithm "
+                     "of the Core. Default is {}.",
+    "c-pert-factor": "Indicates the importance of the perturbations in the "
+                     "objective function of the Core. Must be a value between 0"
+                     " and 1. Default is {}.",
+
+    # GENERAL
     "log": "Sets the name of the file where to save the logs other than on "
            "screen.",
     "verbosity": "Increase verbosity of logs from WARNING to INFO.",
@@ -90,28 +93,28 @@ def set_files_args(parser: ArgumentParser):
 
 
 def set_optimization_args(parser: ArgumentParser):
-    group = parser.add_argument_group("optimization")
-    group.add_argument("-o", "--optimization",
+    group = parser.add_argument_group("core optimization")
+    group.add_argument("-cO", "--cOptimization",
                        choices=["DE", "SAC"], default="DE",
-                       help=messages["optimization-type"])
-    group.add_argument("-p", "--parameters", metavar="json",
-                       help=messages["optimization-json"])
-    group.add_argument("-c", "--cores", metavar="num",
+                       help=messages["c-opt-type"])
+    group.add_argument("-cP", "--cParameters", metavar="json",
+                       help=messages["c-opt-json"])
+    group.add_argument("-cC", "--cCores", metavar="num",
                        default=default["cores"], type=int,
-                       help=messages["cores"].format(default["cores"]))
-    group.add_argument("-e", "--evolutions", metavar="num",
+                       help=messages["c-cores"].format(default["cores"]))
+    group.add_argument("-cE", "--cEvolutions", metavar="num",
                        default=default["evolutions"], type=int,
-                       help=messages["evolutions"].format(
+                       help=messages["c-evolutions"].format(
                            default["evolutions"]
                        ))
-    group.add_argument("-i", "--individuals", metavar="num",
+    group.add_argument("-cI", "--cIndividuals", metavar="num",
                        default=default["individuals"], type=int,
-                       help=messages["individuals"].format(
+                       help=messages["c-individuals"].format(
                            default["individuals"]
                        ))
-    group.add_argument("--perturbations-factor", metavar="num",
+    group.add_argument("--cPerturbations-factor", metavar="num",
                        default=default["pert-factor"], type=float,
-                       help=messages["pert-factor"].format(
+                       help=messages["c-pert-factor"].format(
                            default["pert-factor"]
                        ))
 
@@ -185,28 +188,28 @@ def get_files_args(args) -> (Dict[str, str], bool):
 
 
 def get_optimization_args(args) -> OptimizationArgs:
-    algorithm = OptimizationFactory.get_optimization_type(args.optimization)
+    algorithm = OptimizationFactory.get_optimization_type(args.cOptimization)
     params = {}
-    param_filename = args.parameters
+    param_filename = args.cParameters
     if param_filename is not None and os.path.isfile(param_filename):
         with open(param_filename) as params_json:
             params = json.load(params_json)
 
     # get cores - checks if the user puts 0 or less. In this case uses the
     # default number in this system
-    cores = args.cores
+    cores = args.cCores
     if cores <= 0:
         cores = default["cores"]
 
-    evols = args.evolutions
+    evols = args.cEvolutions
     if evols <= 0:
         evols = default["evolutions"]
 
-    individuals = args.individuals
+    individuals = args.cIndividuals
     if individuals <= 0:
         individuals = default["individuals"]
 
-    pert_factor = getattr(args, "perturbations_factor")
+    pert_factor = getattr(args, "cPerturbations_factor")
     if pert_factor < 0 or pert_factor > 1:
         pert_factor = default["pert-factor"]
 
