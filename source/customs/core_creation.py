@@ -9,7 +9,7 @@ from core.base_optimization import BaseOptimization, OptimizationArgs
 from core.core_problem import CoreProblemFactory
 from core.core_system import CoreSystem
 from core.factories import OptimizationFactory
-from core.functions.ode_functions import odeint1e8_function
+from core.functions.common_functions import odeint1e8_lassim
 from core.functions.perturbation_functions import perturbation_func_sequential
 from core.handlers.simple_csv_handler import SimpleCSVSolutionsHandler
 from core.serializers.csv_serializer import CSVSerializer
@@ -38,19 +38,17 @@ def optimization_setup(files: Dict[str, str], opt_args: OptimizationArgs,
     # custom, just for this case
     core = create_core(files["network"])
 
-    files_tuple = data_parsing(files)
+    data, sigma, times, y0 = data_parsing(files)
+    files_tuple = (data, sigma, times)
     is_pert_prob, perturbations = data_parse_perturbations(files, core)
 
     reactions_ids = SortedDict(core.from_reactions_to_ids())
-
-    # starting values are the data values at time 0
-    y0 = files_tuple[0][0]
 
     # creation of the correct type of problem to solve
     if is_pert_prob:
         problem_builder = CoreProblemFactory.new_instance(
             (*files_tuple, perturbations), y0,
-            odeint1e8_function, perturbation_func_sequential,
+            odeint1e8_lassim, perturbation_func_sequential,
             opt_args.pert_factor
         )
         logging.getLogger(__name__).info(
@@ -58,7 +56,7 @@ def optimization_setup(files: Dict[str, str], opt_args: OptimizationArgs,
         )
     else:
         problem_builder = CoreProblemFactory.new_instance(
-            files_tuple, y0, odeint1e8_function
+            files_tuple, y0, odeint1e8_lassim
         )
         logging.getLogger(__name__).info(
             "Created builder for problem without perturbations."
@@ -69,7 +67,7 @@ def optimization_setup(files: Dict[str, str], opt_args: OptimizationArgs,
         vector_map=generate_reactions_vector(reactions_ids),
     )
     opt_builder = OptimizationFactory.new_optimization_instance(
-        opt_args.type, problem_builder, (problem, reactions_ids),
+        opt_args.type, problem_builder, problem, reactions_ids,
         opt_args.evolutions, iter_function
     )
 
@@ -99,7 +97,7 @@ def create_core(network_file: str) -> CoreSystem:
     return core
 
 
-def data_parsing(files: Dict[str, str]) -> (Vector, Vector, Vector):
+def data_parsing(files: Dict[str, str]) -> (Vector, Vector, Vector, Vector):
     """
     Generate the set of data used in the optimization from the file name
     :param files: Dictionary with the filenames containing the data
@@ -109,14 +107,20 @@ def data_parsing(files: Dict[str, str]) -> (Vector, Vector, Vector):
     data_list = [parse_network_data(data_file) for data_file in files["data"]]
 
     np_data_list = [
-        np.array([value for key, value in data.items()], dtype=Float).T
+        np.array([value for key, value in data.items()], dtype=Float)
         for data in data_list
         ]
-    data_mean = np.array(np_data_list, dtype=Float).mean(axis=0)
+    data_maxes = [np.amax(data, axis=1) for data in np_data_list]
+    maxes = np.array(data_maxes, dtype=Float)
+    real_maxes = np.amax(maxes, axis=0)
+    np_data_norm = [(data.T / real_maxes).T for data in np_data_list]
+    data_mean_n = np.array(np_data_norm, dtype=Float).mean(axis=0)
     # unbiased, divisor is N - 1
-    std_dev = np.std(np.array(np_data_list, dtype=Float), ddof=1, axis=0)
+    std_dev = np.std(np.array(np_data_norm, dtype=Float), ddof=1, axis=0)
 
-    return data_mean, std_dev.mean(axis=0), time_seq
+    data_mean = np.array(np_data_list, dtype=Float).mean(axis=0)
+
+    return data_mean_n.T, std_dev.mean(axis=1).T, time_seq, data_mean.T[0]
 
 
 def data_parse_perturbations(files: Dict[str, str], core: CoreSystem

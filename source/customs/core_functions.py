@@ -1,13 +1,14 @@
 import logging
 from copy import deepcopy
-from typing import List, Tuple
+from typing import List
 
 import numpy as np
 from sortedcontainers import SortedDict
 
-from core.core_problem import CoreProblem, CoreProblemFactory
+from core.core_problem import CoreProblemFactory
+from core.lassim_problem import LassimProblem
 from core.solution import Solution
-from utilities.type_aliases import Vector
+from utilities.type_aliases import Vector, Float
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
@@ -16,7 +17,7 @@ __version__ = "0.1.0"
 
 
 def default_bounds(num_tfacts: int, num_react: int
-                   ) -> Tuple[List[float], List[float]]:
+                   ) -> (List[float], List[float]):
     """
     Creates a tuple containing as first element the list of lower bounds, and as
     second element the list of upper bounds for the parameter to optimize.
@@ -34,7 +35,7 @@ def default_bounds(num_tfacts: int, num_react: int
     return lower_bounds, upper_bounds
 
 
-def generate_reactions_vector(reactions: SortedDict, dt_react=np.float64
+def generate_reactions_vector(reactions: SortedDict, dt_react=Float
                               ) -> (Vector, Vector):
     """
     From a reactions map, generates the corresponding numpy vector for
@@ -98,7 +99,7 @@ def remove_lowest_reaction(vres: Vector, reactions: SortedDict
 
 # FIXME - move to a default file not related to the Core
 def iter_function(factory: CoreProblemFactory, solution: Solution
-                  ) -> (Tuple[CoreProblem, SortedDict], bool):
+                  ) -> (LassimProblem, SortedDict, bool):
     react_mask = solution.react_mask
     # checks how many true are still present in the reaction mask. If > 0, it
     # means that there's still at least a reaction
@@ -114,6 +115,6 @@ def iter_function(factory: CoreProblemFactory, solution: Solution
             bounds=default_bounds(len(new_reactions.keys()), num_react),
             vector_map=(new_react, new_mask),
         )
-        return (new_problem, new_reactions), True
+        return new_problem, new_reactions, True
     else:
-        return None, False
+        return None, None, False

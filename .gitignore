@@ -6,8 +6,10 @@
 *.pyc
 *.c
 *.so
+*.html
 
 # Custom stuff
 OUTPUT/
 cluster/
 source/core/build/
+analysis_*/

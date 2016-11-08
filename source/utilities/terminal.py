@@ -57,25 +57,15 @@ default = {
 }
 
 
-def parse_terminal(name: str, setup: LoggerSetup
-                   ) -> (Dict[str, str], Tuple[str, int], OptimizationArgs):
+def set_terminal_args(name: str) -> ArgumentParser:
     parser = ArgumentParser(name)
-
     # set terminal options
     set_files_args(parser)
     set_optimization_args(parser)
     set_logger_args(parser)
     set_output_args(parser)
 
-    # retrieve input from terminal
-    args = parser.parse_args()
-    get_logger_args(args, setup)
-    files, is_pert = get_files_args(args)
-    output = get_output_args(args)
-    optimization_args = get_optimization_args(args)
-    optimization_args.log_args(logging.getLogger(__name__), is_pert)
-
-    return files, output, optimization_args
+    return parser
 
 
 def set_files_args(parser: ArgumentParser):
@@ -135,6 +125,21 @@ def set_output_args(parser: ArgumentParser):
     group.add_argument("-n", "--number-solutions", metavar="num",
                        default=3, type=int,
                        help=messages["number-of-solutions"])
+
+
+def get_terminal_args(parser: ArgumentParser
+                      ) -> (Dict[str, str], Tuple[str, int], OptimizationArgs):
+    setup = LoggerSetup()
+
+    # retrieve input from terminal
+    args = parser.parse_args()
+    get_logger_args(args, setup)
+    files, is_pert = get_files_args(args)
+    output = get_output_args(args)
+    optimization_args = get_optimization_args(args)
+    optimization_args.log_args(logging.getLogger(__name__), is_pert)
+
+    return files, output, optimization_args
 
 
 def get_logger_args(args, setup: LoggerSetup):

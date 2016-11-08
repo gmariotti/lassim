@@ -25,8 +25,11 @@ class CoreProblem(LassimProblem):
     _ode_function = None
 
     def __init__(self, dim: int = 1):
-        # dim is the number of variables to optimize
+        # dim is the number of variables to optim ize
         super(CoreProblem, self).__init__(self._dim)
+
+        # for numpy exp overflow
+        np.seterr(over="ignore")
 
         # only arguments that should be public
         self.vector_map, self.vector_map_mask = self._map_tuple
@@ -60,15 +63,11 @@ class CoreProblem(LassimProblem):
         :return: A tuple of a single value, containing the cost
         """
         solution_vector = np.fromiter(x, dtype=Float)
-
         results = CoreProblem._ode_function(
             self._y0, self._time,
             (solution_vector, self.vector_map, self.vector_map_mask, self._size)
         )
-        # FIXME - handle the case in which one of the value in np.amax(results)
-        # is 0, in order to avoid 0/0 = nan case
         norm_results = results / np.amax(results, axis=0)
-        # cost = np.sum(np.power((self._data - results), 2) / self._sigma2)
         cost = np.sum(np.power((self._data - norm_results), 2) / self._sigma2)
 
         return (cost,)
@@ -138,7 +137,7 @@ class CoreProblemFactory(LassimProblemFactory):
         CoreProblem._cost_data = cost_data
         CoreProblem._y0 = y0
         self.__is_pert = False
-        if pecort_function is not None:
+        if pert_function is not None:
             CoreWithPerturbationsProblem._pert_function = pert_function
             CoreWithPerturbationsProblem._pert_factor = pert_factor
             self.__is_pert = True

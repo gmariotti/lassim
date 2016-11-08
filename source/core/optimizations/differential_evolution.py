@@ -26,9 +26,11 @@ class DEOptimization(BaseOptimization):
     type_name = "Differential Evolution"
 
     def __init__(self, prob_factory: LassimProblemFactory,
-                 problem: Tuple[LassimProblem, SortedDict], evolutions: int,
+                 problem: LassimProblem, reactions: SortedDict, evolutions: int,
                  iter_func: Callable[..., bool]):
-        super(DEOptimization, self).__init__(prob_factory, problem, iter_func)
+        super(DEOptimization, self).__init__(
+            prob_factory, problem, reactions, iter_func
+        )
         # default settings for algorithm
         self._algorithm = algorithm.de()
         self._logger = logging.getLogger(__name__)
@@ -41,7 +43,8 @@ class DEOptimization(BaseOptimization):
     def build(self, handler: SolutionsHandler, core: CoreSystem,
               **kwargs) -> 'DEOptimization':
         de_opt = DEOptimization(
-            self._probl_factory, self._start_problem, self._evol, self._iterate
+            self._probl_factory, self._start_problem, self._start_reactions,
+            self._evol, self._iterate
         )
         valid_args = self.verify_arguments(**kwargs)
         if len(valid_args) > 0:

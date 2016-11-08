@@ -8,11 +8,11 @@ from numpy.testing import assert_array_equal
 from sortedcontainers import SortedDict, SortedSet
 
 from core.core_problem import CoreProblemFactory
-from core.functions.ode_functions import odeint1e8_function
+from core.functions.common_functions import odeint1e8_lassim
+from core.functions.perturbation_functions import perturbation_func_sequential
 from core.solution import Solution
 from customs.core_functions import generate_reactions_vector, \
     remove_lowest_reaction, default_bounds, iter_function
-from core.functions.perturbation_functions import perturbation_func_with_pool
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
@@ -44,8 +44,8 @@ class TestCoreFunctions(TestCase):
         y0 = np.linspace(0, 100, num=10)
 
         self.factory = CoreProblemFactory.new_instance(
-            (data, sigma, times, pert_data), y0, odeint1e8_function,
-            perturbation_func_with_pool, pert_factor=1
+            (data, sigma, times, pert_data), y0, odeint1e8_lassim,
+            perturbation_func_sequential, pert_factor=1
         )
         self.fake_champion = champion()
         # 17 = 4lambdas + 4vmax + 9reactions
@@ -114,7 +114,9 @@ class TestCoreFunctions(TestCase):
             (np.linspace(0, 10, 9),
              np.array([False for _ in range(0, 9)]))
         )
-        new_problem, iteration = iter_function(self.factory, solution)
+        new_problem, new_reactions, iteration = iter_function(
+            self.factory, solution
+        )
         assert_false(iteration, "An iteration wasn't expected.")
 
     def test_IterationFunctionWithMaskOneTrue(self):
@@ -124,7 +126,9 @@ class TestCoreFunctions(TestCase):
             self.fake_champion, self.fake_reactions,
             (np.linspace(0, 10, 9), np.array(mask))
         )
-        new_problem, iteration = iter_function(self.factory, solution)
+        new_problem, new_reactions, iteration = iter_function(
+            self.factory, solution
+        )
         assert_true(iteration, "An iteration was expected.")
 
     def test_IterationFunctionWithMaskUnlTrue(self):
@@ -136,11 +140,15 @@ class TestCoreFunctions(TestCase):
             (np.linspace(0, 10, 9), np.array(mask))
         )
         for i in range(0, 9):
-            new_problem, iteration = iter_function(self.factory, solution)
+            new_problem, new_reactions, iteration = iter_function(
+                self.factory, solution
+            )
             assert_true(iteration, "Expected iteration at try {}".format(i))
             solution = Solution(
-                self.fake_champion, new_problem[1],
-                (new_problem[0].vector_map, new_problem[0].vector_map_mask)
+                self.fake_champion, new_reactions,
+                (new_problem.vector_map, new_problem.vector_map_mask)
             )
-        new_problem, iteration = iter_function(self.factory, solution)
+        new_problem, new_reactions, iteration = iter_function(
+            self.factory, solution
+        )
         assert_false(iteration, "No iteration expected at the end.")

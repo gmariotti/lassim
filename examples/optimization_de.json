@@ -1,4 +1,7 @@
 {
-  "gen": 200,
+  "gen": 160,
+  "variant": 3,
+  "f": 0.85,
+  "cr": 1,
   "screen_output": true
 }

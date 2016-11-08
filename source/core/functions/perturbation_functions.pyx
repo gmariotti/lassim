@@ -1,8 +1,8 @@
-# cython: profile=True
-
+cimport cython
 from multiprocessing.pool import Pool
 from typing import Tuple, Callable
 
+cimport numpy as np
 import numpy as np
 from numpy import linalg
 
@@ -13,24 +13,28 @@ __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
 __version__ = "0.1.0"
 
-cpdef float perturbation_func_sequential(pert_data: Vector, int num_tf,
-                                         y0: Vector,
-                                         ode_args: Tuple[
-                                             Vector, Vector, Vector, int],
-                                         ode: Callable[
-                                             [Vector, Vector, Vector], Vector]
-                                         ):
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.nonecheck(False)
+@cython.cdivision(True)
+# @cython.linetrace(True)
+cpdef double perturbation_func_sequential(np.ndarray[double, ndim=2] pert_data,
+                                          int num_tf, np.ndarray[double] y0,
+                                          tuple ode_args, ode):
     cdef:
-        int i, t_size
+        unsigned int i, t_size
+        double cost
         str time_str
         dict control_dict = {}
         list results = []
+        np.ndarray[double, ndim=2] perturbations, times, simul
+        np.ndarray[double] pert_diag, sol_vector, time_i, ret_value
+
     # first num_tf elements of each row is the value of the perturbations,
     # while the remaining elements of each row are start time and end time
     perturbations = pert_data[:, :num_tf]
     pert_diag = np.diagonal(perturbations)
     times = pert_data[:, num_tf:]
-
     # at each iteration, the value i in the variations vector is modified
     # accordingly to the value in the diagonal.
     # example:
@@ -40,6 +44,7 @@ cpdef float perturbation_func_sequential(pert_data: Vector, int num_tf,
     # n-1 -> [v1 v2 v3 ... vn-1]
     # control_dict = {}
     # results = []
+    sol_vector = ode_args[0]
     for i in range(num_tf):
         time_i = times[i]
         time_str = str(time_i)
@@ -48,11 +53,8 @@ cpdef float perturbation_func_sequential(pert_data: Vector, int num_tf,
         # the fact that dictionary are really fast in python
         if time_str not in control_dict:
             control_dict[time_str] = ode(y0, time_i, ode_args)
-        sol_vector = ode_args[0]
         sol_vector[i] = sol_vector[i] * pert_diag[i]
-        simul = ode(
-            y0, time_i, ode_args
-        )
+        simul = ode(y0, time_i, ode_args)
         tsize = time_i.size
         ret_value = control_dict[time_str][tsize - 1] / simul[tsize - 1]
         results.append(ret_value.flatten())
@@ -67,11 +69,12 @@ cpdef float perturbation_func_sequential(pert_data: Vector, int num_tf,
     lstsq_min = linalg.lstsq(
         np.reshape(nsim_fold, (nsim_fold.size, 1)), perturbations.flatten()
     )
+    # lstsq_min = stats.linregress(
+    #     nsim_fold.flatten(), perturbations.flatten()
+    # )
 
     # at value 0 of lstsq_min there's the least-squares solution
-    cost = np.sum(np.power(nsim_fold * lstsq_min[0], 2))
-
-    return cost
+    return np.sum(np.power(nsim_fold * lstsq_min[0], 2))
 
 # extremely slow, creating a pool of processes everytime is really time
 # consuming

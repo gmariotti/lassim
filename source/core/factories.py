@@ -6,6 +6,7 @@ from core.base_optimization import BaseOptimization
 from core.lassim_problem import LassimProblem, LassimProblemFactory
 from core.optimizations.basin_hopping import BHOptimization
 from core.optimizations.differential_evolution import DEOptimization
+from core.optimizations.simulated_annealing import SACOptimization
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
@@ -21,23 +22,25 @@ class OptimizationFactory:
     """
     _optimizations = {
         DEOptimization.type_name: DEOptimization,
+        SACOptimization.type_name: SACOptimization,
         BHOptimization.type_name: BHOptimization
     }
     _labels = {
         "DE": DEOptimization.type_name,
+        "SAC": SACOptimization.type_name,
         "BH": BHOptimization.type_name
     }
 
     @classmethod
     def new_optimization_instance(cls, opt_type: str,
                                   prob_builder: LassimProblemFactory,
-                                  problem: Tuple[LassimProblem, SortedDict],
+                                  problem: LassimProblem, reactions: SortedDict,
                                   evols: int,
                                   iter_func: Callable[..., bool] = None
                                   ) -> Callable[..., BaseOptimization]:
         if opt_type in cls._optimizations:
             optimization = cls._optimizations[opt_type](
-                prob_builder, problem, evols, iter_func
+                prob_builder, problem, reactions, evols, iter_func
             )
             return optimization.build
         else:

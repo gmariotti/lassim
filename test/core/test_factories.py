@@ -27,7 +27,7 @@ class TestOptimizationFactory(TestCase):
         assert_raises(ReferenceError,
                       OptimizationFactory.new_optimization_instance,
                       "not-valid-type", self.factory,
-                      (self.problem, SortedDict()), 0, None)
+                      self.problem, SortedDict(), 0, None)
 
     def test_ValidShortOptimizationType(self):
         expected = BHOptimization.type_name

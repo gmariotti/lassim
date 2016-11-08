@@ -23,10 +23,11 @@ class BaseOptimization:
     """
 
     def __init__(self, prob_factory: LassimProblemFactory,
-                 problem: Tuple[LassimProblem, SortedDict],
+                 problem: LassimProblem, reactions: SortedDict,
                  iter_func: Callable[..., bool]):
         self._probl_factory = prob_factory
         self._start_problem = problem
+        self._start_reactions = reactions
         self._iterate = iter_func
         self._handler = None
         self._core = None
@@ -45,22 +46,27 @@ class BaseOptimization:
         try:
             iteration = 1
             solution = self._generate_solution(
-                self._start_problem, n_individuals, n_threads, topol
+                self._start_problem, self._start_reactions, n_individuals,
+                n_threads, topol
             )
             solutions.add(solution)
             self._logger.info("({}) - New solution found.".format(iteration))
 
-            problem, do_iteration = self._iterate(self._probl_factory, solution)
+            problem, reactions, do_iteration = self._iterate(
+                self._probl_factory, solution
+            )
             while do_iteration:
                 solution = self._generate_solution(
-                    problem, n_individuals, n_threads, topol
+                    problem, reactions, n_individuals, n_threads, topol
                 )
                 solutions.add(solution)
                 iteration += 1
                 self._logger.info(
-                    "({}) - New solution found.".format(iteration))
-                problem, do_iteration = self._iterate(self._probl_factory,
-                                                      solution)
+                    "({}) - New solution found.".format(iteration)
+                )
+                problem, reactions, do_iteration = self._iterate(
+                    self._probl_factory, solution
+                )
             self._logger.info("Differential evolution completed.")
         # FIXME - is horrible to have to catch all possible exceptions but
         # requires a bit of time to understand all the possible exceptions
@@ -70,7 +76,7 @@ class BaseOptimization:
             self._logger.error("Returning solutions found so far")
         return solutions
 
-    def _generate_solution(self, problem: Tuple[LassimProblem, SortedDict],
+    def _generate_solution(self, problem: LassimProblem, reactions: SortedDict,
                            n_individuals: int, n_threads: int, topol
                            ) -> Solution:
         """
@@ -78,7 +84,7 @@ class BaseOptimization:
         It returns the best solution found after the optimization process.
         """
         archi = archipelago(
-            self._algorithm, problem[0], n_threads, n_individuals,
+            self._algorithm, problem, n_threads, n_individuals,
             topology=topol
         )
         archi.evolve(self._evol)
@@ -86,13 +92,13 @@ class BaseOptimization:
         # FIXME
         # self._archipelagos.append(archi)
         solution = self._get_best_solution(
-            archi, problem
+            archi, problem, reactions
         )
         return solution
 
     # not side-effect free but at least I isolated it
-    def _get_best_solution(self, archi: archipelago,
-                           prob: Tuple[LassimProblem, SortedDict]) -> Solution:
+    def _get_best_solution(self, archi: archipelago, prob: LassimProblem,
+                           reactions: SortedDict) -> Solution:
         """
         From an archipelago, generates the list of with the best solution for
         each island, pass them to an instance of SolutionHandler and then
@@ -101,8 +107,7 @@ class BaseOptimization:
         champions = [isl.population.champion for isl in archi]
         # FIXME - test it because seems like that the worst solution is taken
         solutions = SortedListWithKey(
-            [Solution(champ, prob[1],
-                      (prob[0].vector_map, prob[0].vector_map_mask))
+            [Solution(champ, reactions, (prob.vector_map, prob.vector_map_mask))
              for champ in champions],
             key=Solution.get_cost
         )

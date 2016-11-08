@@ -84,7 +84,7 @@ def parse_network_data(filename: str, sep: str = "\t",
 
 
 def parse_time_sequence(filename: str, sep: str = "\t",
-                        d_type: np.dtype = np.uint32) -> Vector:
+                        d_type: np.dtype = Float) -> Vector:
     times = pd.read_csv(filename, sep=sep)
     # check validity of headers
     columns = len(times.columns)
