@@ -20,7 +20,9 @@ __version__ = "0.1.0"
 # @cython.linetrace(True)
 cpdef double perturbation_func_sequential(np.ndarray[double, ndim=2] pert_data,
                                           int num_tf, np.ndarray[double] y0,
-                                          tuple ode_args, ode):
+                                          np.ndarray[double] sol_vector,
+                                          np.ndarray[double] k_map,
+                                          np.ndarray k_map_mask, int size, ode):
     cdef:
         unsigned int i, t_size
         double cost
@@ -28,7 +30,8 @@ cpdef double perturbation_func_sequential(np.ndarray[double, ndim=2] pert_data,
         dict control_dict = {}
         list results = []
         np.ndarray[double, ndim=2] perturbations, times, simul
-        np.ndarray[double] pert_diag, sol_vector, time_i, ret_value
+        np.ndarray[double] pert_diag, time_i, ret_value
+        np.ndarray[double] result = np.empty(num_tf)
 
     # first num_tf elements of each row is the value of the perturbations,
     # while the remaining elements of each row are start time and end time
@@ -44,37 +47,40 @@ cpdef double perturbation_func_sequential(np.ndarray[double, ndim=2] pert_data,
     # n-1 -> [v1 v2 v3 ... vn-1]
     # control_dict = {}
     # results = []
-    sol_vector = ode_args[0]
     for i in range(num_tf):
         time_i = times[i]
+        # FIXME - find a better way
         time_str = str(time_i)
+
         # the control_dict takes trace of control calculations already evaluated
         # for that time sequence. It should not impact performance considering
         # the fact that dictionary are really fast in python
         if time_str not in control_dict:
-            control_dict[time_str] = ode(y0, time_i, ode_args)
+            control_dict[time_str] = ode(
+                y0, time_i, sol_vector, k_map, k_map_mask, size, result
+            )
         sol_vector[i] = sol_vector[i] * pert_diag[i]
-        simul = ode(y0, time_i, ode_args)
+        simul = ode(y0, time_i, sol_vector, k_map, k_map_mask, size, result)
         tsize = time_i.size
-        ret_value = control_dict[time_str][tsize - 1] / simul[tsize - 1]
-        results.append(ret_value.flatten())
+        results.append(
+            (simul[tsize - 1] / control_dict[time_str][tsize - 1]).flatten()
+        )
 
     # each row contains the vale in results
-    sim_fold = np.array(results)
+    sim_fold = np.array(results) - 1
+    sim_fold[sim_fold > 2] = 2
 
-    nsim_fold = sim_fold - 1
-    nsim_fold[nsim_fold > 2] = 2
     # for linalg.lstsq, nsim_fold must be a nx1 matrix while perturbations a
     # 1xn matrix, or n numpy vector
     lstsq_min = linalg.lstsq(
-        np.reshape(nsim_fold, (nsim_fold.size, 1)), perturbations.flatten()
+        np.reshape(sim_fold, (sim_fold.size, 1)), perturbations.flatten()
     )
     # lstsq_min = stats.linregress(
     #     nsim_fold.flatten(), perturbations.flatten()
     # )
 
     # at value 0 of lstsq_min there's the least-squares solution
-    return np.sum(np.power(nsim_fold * lstsq_min[0], 2))
+    return np.sum(np.power(sim_fold * lstsq_min[0], 2))
 
 # extremely slow, creating a pool of processes everytime is really time
 # consuming

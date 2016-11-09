@@ -116,11 +116,11 @@ def data_parsing(files: Dict[str, str]) -> (Vector, Vector, Vector, Vector):
     np_data_norm = [(data.T / real_maxes).T for data in np_data_list]
     data_mean_n = np.array(np_data_norm, dtype=Float).mean(axis=0)
     # unbiased, divisor is N - 1
-    std_dev = np.std(np.array(np_data_norm, dtype=Float), ddof=1, axis=0)
+    std_dev = np.std(np.array(np_data_norm, dtype=Float), axis=2)
 
     data_mean = np.array(np_data_list, dtype=Float).mean(axis=0)
 
-    return data_mean_n.T, std_dev.mean(axis=1).T, time_seq, data_mean.T[0]
+    return data_mean_n.T, std_dev.mean(axis=0), time_seq, data_mean.T[0]
 
 
 def data_parse_perturbations(files: Dict[str, str], core: CoreSystem

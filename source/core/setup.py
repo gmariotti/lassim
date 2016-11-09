@@ -27,6 +27,12 @@ extensions = [
 ]
 
 setup(
+    name="LASSIM",
+    version=__version__,
+    url="https://github.com/gmariotti/lassim",
+    license=__license__,
+    author=__author__,
+    description="The LASSIM toolbox",
     cmdclass=compiler,
     ext_modules=cythonize(extensions)
 )

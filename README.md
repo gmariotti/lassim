@@ -39,6 +39,7 @@ The list of **mandatory** dependencies is:
 - [PyGMO 1.1.7](http://esa.github.io/pygmo/index.html)
 - [NumPy 1.11.1/SciPy 1.17.1](http://www.scipy.org/)
 - [pandas 1.18.1](http://pandas.pydata.org/)
+- [Cython >= 0.24.0](http://cython.org/)
 - [sortedcontainers >= 1.5.3](http://www.grantjenks.com/docs/sortedcontainers/)
 
 For some tips on how to install PyGMO, look at [Suggestions for PyGMO installation](#Suggestions-for-PyGMO-installation).

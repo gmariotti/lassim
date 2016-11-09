@@ -56,6 +56,8 @@ class CoreProblem(LassimProblem):
         # sets lower bounds and upper bounds
         self.set_bounds(self._bounds[0], self._bounds[1])
 
+        self._result = np.empty(self._size)
+
     def _objfun_impl(self, x):
         """
         Calculates the objective function for this problem
@@ -65,7 +67,8 @@ class CoreProblem(LassimProblem):
         solution_vector = np.fromiter(x, dtype=Float)
         results = CoreProblem._ode_function(
             self._y0, self._time,
-            (solution_vector, self.vector_map, self.vector_map_mask, self._size)
+            solution_vector, self.vector_map, self.vector_map_mask,
+            self._size, self._result
         )
         norm_results = results / np.amax(results, axis=0)
         cost = np.sum(np.power((self._data - norm_results), 2) / self._sigma2)
@@ -97,13 +100,13 @@ class CoreWithPerturbationsProblem(CoreProblem):
         self._factor = self._pert_factor
 
     def _objfun_impl(self, x):
-        # TODO - cost and pert_cost are assumed independent from each other
-        # possible improvement can be to run one of them asynchronously
+        # cost and pert_cost are assumed independent from each other but running
+        # them asynchronously with a pool is slower than doing that sequentially
         cost = super(CoreWithPerturbationsProblem, self)._objfun_impl(x)[0]
         sol_vector = np.fromiter(x, dtype=Float)
         pert_cost = CoreWithPerturbationsProblem._pert_function(
             self._pdata, self._size, self._y0,
-            (sol_vector, self.vector_map, self.vector_map_mask, self._size),
+            sol_vector, self.vector_map, self.vector_map_mask, self._size,
             CoreProblem._ode_function
         )
 
@@ -124,11 +127,11 @@ class CoreProblemFactory(LassimProblemFactory):
     """
 
     def __init__(self, cost_data: Tuple, y0: Vector, ode_function: Callable[
-        [Vector, Vector, Tuple[Vector, Vector, Vector, int]], Vector
+        [Vector, Vector, Vector, Vector, Vector, int], Vector
     ], pert_function: Callable[
-        [Vector, int, Vector, Tuple[Vector, Vector, Vector, int],
-         Callable[[Vector, Vector, Vector], Vector]], float
-    ], pert_factor: float):
+        [Vector, int, Vector, Vector, Vector, Vector, int,
+         Callable[[Vector, Vector, Vector, Vector, Vector, int], Vector]],
+        float], pert_factor: float):
         CoreProblem._ode_function = ode_function
         # divides data considering presence or not of perturbations data
         if len(cost_data) == 4:
@@ -144,11 +147,11 @@ class CoreProblemFactory(LassimProblemFactory):
 
     @classmethod
     def new_instance(cls, cost_data: Tuple, y0: Vector, ode_function: Callable[
-        [Vector, Vector, Tuple[Vector, Vector, Vector, int]], Vector
+        [Vector, Vector, Vector, Vector, Vector, int], Vector
     ], pert_function: Callable[
-        [Vector, int, Vector, Tuple[Vector, Vector, Vector, int],
-         Callable[[Vector, Vector, Vector], Vector]], float
-    ] = None, pert_factor: float = 0) -> 'CoreProblemFactory':
+        [Vector, int, Vector, Vector, Vector, Vector, int,
+         Callable[[Vector, Vector, Vector, Vector, Vector, int, Vector], Vector]
+         ], float] = None, pert_factor: float = 0) -> 'CoreProblemFactory':
         factory = CoreProblemFactory(
             cost_data, y0, ode_function, pert_function, pert_factor
         )

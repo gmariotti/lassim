@@ -15,37 +15,27 @@ __version__ = "0.1.0"
 @cython.cdivision(True)
 cpdef np.ndarray[double] lassim_function(np.ndarray[double] y,
                                          double t,
-                                         np.ndarray[double] solution,
-                                         np.ndarray[double] k_map,
-                                         np.ndarray k_map_mask, int size):
+                                         np.ndarray[double] lambdas,
+                                         np.ndarray[double] vmax,
+                                         np.ndarray[double, ndim=2] k_map,
+                                         np.ndarray[double] ones,
+                                         np.ndarray[double] result):
     """
     Generates the list of functions to be "integrated"
     The form of the function is of the type
     dx/dt = -lambda * x + vmax / (1 + e-(SUMj kj * xj))
-    :param y: value of each function during integration
-    :param t: time sequence to be evaluated
-    :param solution: decision vector received from an optimization. Represent a
-    vector of type [lambda1,.., lambdan, vmax1,.., vmaxn, react1,.., reactm]
-    :param k_map: a vector/map representing all the reactions between all the
-    transcription factors
-    :param k_map_mask: a mask of True/False of k_map used to identify which
-    reactions are valid and which not
-    :param size: number of transcription factors
-    :return: The list of functions
+    :param y: value of each function during integration.
+    :param t: time value at this point in the integration. Not used.
+    :param lambdas: Vector of lambdas in form [lambda_1, lambda_2,.., lambda_n]
+    :param vmax: Vector of vmax in form [vmax_1, vmax_2,.., vmax_n]
+    :param k_map: a matrix representing all the reactions between all the
+    transcription factors.
+    :param ones: Vector of ones, same size of lambdas and vmax, for performance
+    purposes.
+    :param result: Vector containing the result of the function. Done for
+    performance purposes.
+    :return: The value of the ode system at time t.
     """
-    cdef:
-        np.ndarray[double] lambdas, vmax, k_values
-
-    lambdas = solution[:size]
-    vmax = solution[size: size * 2]
-    k_values = solution[size * 2:]
-    # map is a vector, but will be reshaped as a matrix size x size
-    k_map[k_map_mask] = k_values
-
-    # should return something like [val, val2, ..., valn]
-    # k_values is a map with 0 where x is not present and the value of k when
-    #  it is. Numpy will broadcast y to all the rows of k_values
-    # sum_mat = np.dot(np.reshape(k_map, (size, size)), y.T)
 
     # don't worry about RuntimeWarning for np.exp overflow. Even if a value
     # become inf, because is at the denominator it will make the result equal
@@ -60,16 +50,42 @@ cpdef np.ndarray[double] lassim_function(np.ndarray[double] y,
     # )
 
     # sum_mat = -np.dot(np.reshape(k_map, (size, size)), y.T)
-    return -lambdas * y + vmax / (
-        np.ones(y.size, dtype=Float) + np.exp(
-            -np.dot(np.reshape(k_map, (size, size)), y.T)
-        )
-    )
+    result = -lambdas * y + vmax / (ones + np.exp(-np.dot(k_map, y.T)))
+    return result
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.nonecheck(False)
 cpdef np.ndarray[double, ndim=2] odeint1e8_lassim(np.ndarray[double] y0,
                                                   np.ndarray[double] t,
-                                                  tuple args):
-    return integrate.odeint(lassim_function, y0, t, args=args, mxstep=int(1e8))
+                                                  np.ndarray[double] sol_vector,
+                                                  np.ndarray[double] k_map,
+                                                  np.ndarray k_map_mask,
+                                                  int size,
+                                                  np.ndarray[double] result):
+    """
+    TODO
+    :param y0:
+    :param t:
+    :param sol_vector:
+    :param k_map:
+    :param k_map_mask:
+    :param size:
+    :param result:
+    :return:
+    """
+    cdef:
+        np.ndarray[double] lambdas, vmax, k_values, ones
+
+    lambdas = sol_vector[:size]
+    vmax = sol_vector[size: 2 * size]
+    k_values = sol_vector[2 * size:]
+
+    # map is a vector, but will be reshaped as a matrix size x size
+    k_map[k_map_mask] = k_values
+    ones = np.ones(size, dtype=Float)
+    return integrate.odeint(
+        lassim_function, y0, t,
+        args=(lambdas, vmax, np.reshape(k_map, (size, size)), ones, result),
+        mxstep=int(1e8)
+    )
