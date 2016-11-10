@@ -10,16 +10,23 @@ __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
 __version__ = "0.1.0"
 
+PROFILING = False
+
 compiler = {
-    # "profile": True,
+    "profile": PROFILING,
     "build_ext": build_ext,
     "language_level": 3
 }
+macros = []
+
+if PROFILING:
+    macros.append(("CYTHON_TRACE", 1))
+
 
 extensions = [
     Extension("functions.perturbation_functions",
               ["functions/perturbation_functions.pyx"],
-              # define_macros=[("CYTHON_TRACE", 1)],
+              define_macros=macros,
               include_dirs=[numpy.get_include()]),
     Extension("functions.common_functions",
               ["functions/common_functions.pyx"],
