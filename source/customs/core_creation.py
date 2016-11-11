@@ -1,8 +1,7 @@
 import logging
-from typing import Dict
+from typing import Dict, Callable
 
 import numpy as np
-from PyGMO import topology
 from sortedcontainers import SortedDict
 
 from core.base_optimization import BaseOptimization, OptimizationArgs
@@ -11,9 +10,6 @@ from core.core_system import CoreSystem
 from core.factories import OptimizationFactory
 from core.functions.common_functions import odeint1e8_lassim
 from core.functions.perturbation_functions import perturbation_func_sequential
-from core.handlers.simple_csv_handler import SimpleCSVSolutionsHandler
-from core.serializers.csv_serializer import CSVSerializer
-from core.solutions_handler import SolutionsHandler
 from customs.core_functions import default_bounds, generate_reactions_vector, \
     iter_function
 from data_management.csv_format import parse_network, parse_time_sequence, \
@@ -21,7 +17,7 @@ from data_management.csv_format import parse_network, parse_time_sequence, \
 from utilities.type_aliases import Vector, Float
 
 """
-Set of custom functions for creation and optimization of the core.
+Set of custom functions for creation of the core and its optimization builder.
 Can be considered an example of typical use of the toolbox.
 """
 
@@ -32,8 +28,7 @@ __version__ = "0.1.0"
 
 
 def optimization_setup(files: Dict[str, str], opt_args: OptimizationArgs,
-                       serializer: CSVSerializer,
-                       ) -> (BaseOptimization, SimpleCSVSolutionsHandler):
+                       ) -> (CoreSystem, Callable[..., BaseOptimization]):
     # core construction
     # custom, just for this case
     core = create_core(files["network"])
@@ -68,32 +63,15 @@ def optimization_setup(files: Dict[str, str], opt_args: OptimizationArgs,
     )
     opt_builder = OptimizationFactory.new_optimization_instance(
         opt_args.type, problem_builder, problem, reactions_ids,
-        opt_args.evolutions, iter_function
+        opt_args.num_evolutions, iter_function
     )
-
-    # handler construction
-    handler = create_handler(core, serializer)
-
-    optimization = opt_builder(
-        handler, core, **opt_args.params
-    )
-
-    return optimization, handler
-
-
-def optimization_run(optimization: BaseOptimization, num_islands: int,
-                     num_individuals: int, handler: SimpleCSVSolutionsHandler):
-    solutions = optimization.solve(
-        n_threads=num_islands, n_individuals=num_individuals,
-        topol=topology.ring()
-    )
-    handler.handle_solutions(solutions, "best_solutions.csv")
+    return core, opt_builder
 
 
 def create_core(network_file: str) -> CoreSystem:
     tf_network = parse_network(network_file)
     core = CoreSystem(tf_network)
-    logging.getLogger(__name__).info(core)
+    logging.getLogger(__name__).info("\n" + str(core))
     return core
 
 
@@ -156,11 +134,3 @@ def data_parse_perturbations(files: Dict[str, str], core: CoreSystem
         return is_present, pert_data
     except KeyError:
         return False, np.empty(0)
-
-
-def create_handler(core: CoreSystem, serializer) -> SolutionsHandler:
-    headers = ["lambda", "vmax"]
-    headers += core.tfacts
-    serializer.set_headers(headers)
-    handler = SimpleCSVSolutionsHandler(serializer)
-    return handler

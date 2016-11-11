@@ -2,7 +2,12 @@ from typing import List, Tuple
 
 from PyGMO.problem import base
 
-from utilities.type_aliases import Tuple2V
+from utilities.type_aliases import Tuple2V, Vector
+
+__author__ = "Guido Pio Mariotti"
+__copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
+__license__ = "GNU General Public License v3.0"
+__version__ = "0.1.0"
 
 
 class LassimProblem(base):
@@ -13,6 +18,10 @@ class LassimProblem(base):
 
     def _objfun_impl(self, x):
         raise NotImplementedError(self._objfun_impl.__name__)
+
+    def plot(self, decision_vector: Vector, figure_name: List[str],
+             x_label: str, y_label: str):
+        raise NotImplementedError(self.plot.__name__)
 
 
 class LassimProblemFactory:

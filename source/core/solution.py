@@ -1,6 +1,8 @@
 from copy import deepcopy
+from typing import List
 
 import numpy as np
+import pandas as pd
 from PyGMO import champion
 from sortedcontainers import SortedDict
 
@@ -20,33 +22,22 @@ class Solution:
     def __init__(self, champ: champion, react_ids: SortedDict,
                  reactions: Tuple2V):
         self.result = champ
-        self.solution = champ.x
-        self.cost = champ.f[0]
-        self.reactions_ids = react_ids
+        self.__solution = champ.x
+        self.__cost = champ.f[0]
+        self.__reactions_ids = react_ids
         self.react_vect, self.react_mask = reactions
 
-    def get_cost(self) -> float:
-        """
-        Get the cost of this solution as a float number.
-        :return: The solution cost casted to python float
-        """
-        return float(self.cost)
+    @property
+    def cost(self) -> float: return float(self.__cost)
 
-    def get_solution_vector(self) -> Vector:
-        """
-        Get the decision vector for this solution.
-        :return: The decision vector as a numpy array.
-        """
-        return np.array(self.solution, dtype=Float)
+    @property
+    def solution_vector(self) -> Vector:
+        return np.array(self.__solution, dtype=Float)
 
-    def get_number_of_variables(self) -> int:
-        """
-        Get the number of variables in the decision vector.
-        :return: The number of variables in the decision vector.
-        """
-        return len(self.solution)
+    @property
+    def number_of_variables(self) -> int: return len(self.__solution)
 
-    def get_solution_matrix(self) -> Vector:
+    def get_solution_matrix(self, headers: List[str]) -> pd.DataFrame:
         """
         Get a numpy matrix representing the solution. Each row of the matrix
         represents a transcription factor, while the columns are divided as
@@ -54,17 +45,39 @@ class Solution:
         :return: A numpy matrix representing the solution.
         """
         num_tfacts = len(self.reactions_ids.keys())
-        lambdas = np.transpose([self.solution[:num_tfacts]])
-        vmax = np.transpose([self.solution[num_tfacts: 2 * num_tfacts]])
+        lambdas = np.transpose([self.__solution[:num_tfacts]])
+        vmax = np.transpose([self.__solution[num_tfacts: 2 * num_tfacts]])
         react_vect = self.react_vect.copy()
-        react_vect[self.react_mask] = self.solution[2 * num_tfacts:]
+        react_vect[self.react_mask] = self.__solution[2 * num_tfacts:]
         react_vect = np.reshape(react_vect, (num_tfacts, num_tfacts))
         lambdas_vmax = np.append(lambdas, vmax, axis=1)
-        return np.append(lambdas_vmax, react_vect, axis=1)
+        matrix = np.append(lambdas_vmax, react_vect, axis=1)
+        return pd.DataFrame(data=matrix, columns=headers)
 
-    def get_reactions_ids(self) -> SortedDict:
+    @property
+    def reactions_ids(self) -> SortedDict: return deepcopy(self.__reactions_ids)
+
+    def __str__(self):
+        solution_string = """
+        == Solution info ==
+        cost: {}
+        decision vector: {}
+        reactions: {}
         """
-        Gets a deep copy of the reactions ids dictionary
-        :return: reactions ids copy
-        """
-        return deepcopy(self.reactions_ids)
+        return solution_string.format(
+            self.cost,
+            np.array2string(self.solution_vector, separator=","),
+            self.reactions_ids
+        )
+
+    def __ge__(self, other: 'Solution'): return self.cost >= other.cost
+
+    def __le__(self, other: 'Solution'): return self.cost <= other.cost
+
+    def __eq__(self, other: 'Solution'): return self.cost == other.cost
+
+    def __gt__(self, other: 'Solution'): return self.cost > other.cost
+
+    def __lt__(self, other: 'Solution'): return self.cost < other.cost
+
+    def __ne__(self, other: 'Solution'): return self.cost != other.cost

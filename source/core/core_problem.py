@@ -1,6 +1,7 @@
 from typing import Tuple, Callable, List
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 from core.lassim_problem import LassimProblem, LassimProblemFactory
 from utilities.type_aliases import Vector, Float, Tuple2V
@@ -80,6 +81,25 @@ class CoreProblem(LassimProblem):
         cost = np.sum(np.power((self._data - norm_results), 2) / self._sigma2)
 
         return (cost,)
+
+    # FIXME - move to SolutionHandler
+    def plot(self, decision_vector: Vector, figure_names: List[str],
+             x_label: str, y_label: str):
+        results = CoreProblem._s_ode_function(
+            self._y0, self._time,
+            decision_vector, self.vector_map, self.vector_map_mask,
+            self._size, self._result
+        )
+        norm_results = results / np.amax(results, axis=0)
+
+        for i in range(0, len(figure_names)):
+            plt.figure(i)
+            plt.xlabel(x_label)
+            plt.ylabel(y_label.format(figure_names[i]))
+            plt.plot(self._time, self._data[:, i], label="data")
+            plt.plot(self._time, norm_results[:, i], label="results")
+            plt.legend()
+            plt.savefig(figure_names[i])
 
     def __get_deepcopy__(self):
         copy = CoreProblem(dim=self.dimension)

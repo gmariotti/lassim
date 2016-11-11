@@ -16,21 +16,24 @@ class CoreSystem:
         the transcription factor, in the form of a dictionary
         :param network: dictionary with, for each transcription factor,
         the set of transcription factors on which has influence
-        :param correction: decide if transcription factors with no reactions
+        :param correction: decides if transcription factors with no reactions
         must be "corrected" or not with a reaction with all the other
         transcription factors plus itself
         """
         self._network = network
         self.tfacts = network.keys()
-        self.reactions, self.react_count = self.reactions_from_network(
+        self.__reactions, self.__react_count = self.__reactions_from_network(
             correction
         )
 
-    def reactions_from_network(self, correction: bool) -> (SortedDict, int):
+    def __reactions_from_network(self, correction: bool) -> (SortedDict, int):
         """
         The dictionary of reactions returned is reversed in respect to the
         network one. Each transcription factor has the set of transcription
         factors that affect him
+        :param correction: decides if transcription factors with no reactions
+        must be "corrected" or not with a reaction with all the other
+        transcription factors plus itself
         :return: reactions dictionary and number of reactions
         """
         reactions_sorted = SortedDict()
@@ -75,6 +78,10 @@ class CoreSystem:
             yield i, self.tfacts[i]
 
     def from_reactions_to_ids(self) -> (int, SortedSet):
+        """
+        Maps each reaction with its corresponding id.
+        :return: (id, set(reactions_ids))
+        """
         tfacts_ids = {key: value for key, value in self.from_tfacts_to_ids()}
         for tfact, reactions in self.reactions.items():
             reactions_ids = SortedSet([tfacts_ids[tf] for tf in reactions])
@@ -82,6 +89,13 @@ class CoreSystem:
 
     def from_reactions_ids_to_str(self, reactions: SortedDict
                                   ) -> (str, SortedSet):
+        """
+        Maps a dictionary of reactions from ids to string names.
+        :param reactions: Dictionary of <int:set(int)> representing reactions as
+        integer numbers
+        :return: The same dictionary as input with string names instead of
+        integer ids.
+        """
         tfacts_ids = {key: value for key, value in self.from_ids_to_tfacts()}
         for key, value in reactions.viewitems():
             try:
@@ -93,9 +107,17 @@ class CoreSystem:
                     "value -> {}".format(key, value)
                 )
 
-    def _get_tfacts_num(self) -> int:
+    @property
+    def num_tfacts(self):
         return len(self.tfacts)
-    num_tfacts = property(_get_tfacts_num)
+
+    @property
+    def reactions(self):
+        return self.__reactions
+
+    @property
+    def react_count(self):
+        return self.__react_count
 
     def __str__(self):
         title = "== Core =="

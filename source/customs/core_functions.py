@@ -103,10 +103,10 @@ def iter_function(factory: CoreProblemFactory, solution: Solution
     react_mask = solution.react_mask
     # checks how many true are still present in the reaction mask. If > 0, it
     # means that there's still at least a reaction
-    if react_mask[react_mask == True].size > 0:
-        reactions = solution.get_reactions_ids()
+    if react_mask[react_mask].size > 0:
+        reactions = solution.reactions_ids
         red_vect, new_reactions = remove_lowest_reaction(
-            solution.get_solution_vector(), reactions
+            solution.solution_vector, reactions
         )
         new_react, new_mask = generate_reactions_vector(new_reactions)
         num_react = new_react[new_mask].size

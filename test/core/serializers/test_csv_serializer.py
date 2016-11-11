@@ -5,8 +5,7 @@ from unittest import TestCase
 import numpy as np
 from PyGMO.core import champion
 from nose.tools import assert_list_equal
-from scipy.optimize import OptimizeResult
-from sortedcontainers import SortedListWithKey, SortedDict, SortedSet
+from sortedcontainers import SortedList, SortedDict, SortedSet
 
 from core.serializers.csv_serializer import CSVSerializer, \
     default_filename_creator
@@ -20,12 +19,12 @@ def create_fake_solution(cost: float) -> Solution:
     fake_champion.f = (cost,)
     fake_champion.c = ()
     fake_reactions = SortedDict({
-                    0: SortedSet(), 1: SortedSet([0, 2]), 2: SortedSet([2])
-                })
+        0: SortedSet(), 1: SortedSet([0, 2]), 2: SortedSet([2])
+    })
     fake_k_react = (np.array([0, 0, 0, 1, 0, 1, 0, 0, 1], dtype=np.float64),
-                 np.array([False, False, False, True, False, True,
-                           False, False, True])
-                 )
+                    np.array([False, False, False, True, False, True,
+                              False, False, True])
+                    )
     return Solution(fake_champion, fake_reactions, fake_k_react)
 
 
@@ -36,17 +35,15 @@ def fake_filename_creator(val1: int, val2: int):
 class TestCSVSerializer(TestCase):
     def setUp(self):
         self.output_dir = "test-output-dir"
-        headers = ["lambda", "vmax", "GATA3", "STAT6", "MAF"]
         self.number_of_solutions = 3
-
+        self.headers = ["lambda", "vmax", "GATA3", "STAT6", "MAF"]
         self.serializer = CSVSerializer.new_instance(
-            self.output_dir, self.number_of_solutions,
+            self.output_dir, self.number_of_solutions, self.headers,
             fake_filename_creator
         )
-        self.serializer.set_headers(headers)
-        self.solutions = SortedListWithKey(
-            [create_fake_solution(20), create_fake_solution(21.35)],
-            key=Solution.get_cost)
+        self.solutions = SortedList(
+            [create_fake_solution(20), create_fake_solution(21.35)]
+        )
 
     def tearDown(self):
         if os.path.isdir(self.output_dir):
@@ -103,8 +100,7 @@ class TestCSVSerializer(TestCase):
 
     def test_DefaultFilenameCreator(self):
         serializer = CSVSerializer.new_instance(
-            self.output_dir, 2,
-            default_filename_creator, self.serializer._headers.split("\t")
+            self.output_dir, 2, self.headers, default_filename_creator
         )
         serializer.serialize_solutions(self.solutions)
         expected = ["lambda\tvmax\tGATA3\tSTAT6\tMAF\n",

@@ -30,7 +30,7 @@ class TestCoreSystem(TestCase):
         })
         expected_count = 9
         core = CoreSystem(self.fake_network)
-        actual_reactions, actual_count = core.reactions_from_network(True)
+        actual_reactions, actual_count = core.reactions, core.react_count
 
         expected = (expected_reactions, expected_count)
         actual = (actual_reactions, actual_count)
@@ -47,8 +47,8 @@ class TestCoreSystem(TestCase):
             "MAF": SortedSet(["NFATC3", "STAT3", "IRF4"])
         })
         expected_count = 5
-        core = CoreSystem(self.fake_network)
-        actual_reactions, actual_count = core.reactions_from_network(False)
+        core = CoreSystem(self.fake_network, False)
+        actual_reactions, actual_count = core.reactions, core.react_count
 
         expected = (expected_reactions, expected_count)
         actual = (actual_reactions, actual_count)

@@ -1,14 +1,13 @@
 import logging
 from inspect import signature
-from typing import Callable, Dict, Tuple
+from typing import Callable, Dict
 
-from PyGMO import algorithm, topology, archipelago
-from sortedcontainers import SortedDict, SortedList, SortedListWithKey
+from PyGMO import algorithm
+from sortedcontainers import SortedDict
 
 from core.base_optimization import BaseOptimization
 from core.core_system import CoreSystem
 from core.lassim_problem import LassimProblemFactory, LassimProblem
-from core.solution import Solution
 from core.solutions_handler import SolutionsHandler
 
 __author__ = "Guido Pio Mariotti"
@@ -19,8 +18,9 @@ __version__ = "0.1.0"
 
 class DEOptimization(BaseOptimization):
     """
-    Represents an implementation of the BaseOptimization class for the
-    Differential Evolution algorithms offered by PyGMO.algorithm
+    Implementation of the BaseOptimization class for using the classic
+    Differential Evolution algorithm, as implemented and described in
+    PyGMO.algorithm.de
     """
 
     type_name = "Differential Evolution"
@@ -34,7 +34,7 @@ class DEOptimization(BaseOptimization):
         # default settings for algorithm
         self._algorithm = algorithm.de()
         self._logger = logging.getLogger(__name__)
-        self._evol = evolutions
+        self._evolutions = evolutions
 
         # can be useful to save all the archipelagos used for each optimization
         # FIXME
@@ -44,7 +44,7 @@ class DEOptimization(BaseOptimization):
               **kwargs) -> 'DEOptimization':
         de_opt = DEOptimization(
             self._probl_factory, self._start_problem, self._start_reactions,
-            self._evol, self._iterate
+            self._evolutions, self._iterate
         )
         valid_args = self.verify_arguments(**kwargs)
         if len(valid_args) > 0:
@@ -57,6 +57,12 @@ class DEOptimization(BaseOptimization):
         return de_opt
 
     def verify_arguments(self, **kwargs) -> Dict:
+        """
+        Based on the <key:value> pairs in kwargs, discriminates between valid
+        and invalid arguments based on the signature of algorithm.de.
+        :param kwargs: <key:value> pair for the optimization algorithm
+        :return: Dictionary with <key:value> valid for algorithm.de
+        """
         arguments = signature(algorithm.de.__init__).parameters
         valid_found = {}
         for arg in arguments:
