@@ -7,7 +7,7 @@ from sortedcontainers import SortedDict
 
 from core.core_problem import CoreProblemFactory
 from core.lassim_problem import LassimProblem
-from core.solution import Solution
+from core.solutions.lassim_solution import LassimSolution
 from utilities.type_aliases import Vector, Float
 
 __author__ = "Guido Pio Mariotti"
@@ -98,14 +98,14 @@ def remove_lowest_reaction(vres: Vector, reactions: SortedDict
 
 
 # FIXME - move to a default file not related to the Core
-def iter_function(factory: CoreProblemFactory, solution: Solution
+def iter_function(factory: CoreProblemFactory, solution: LassimSolution
                   ) -> (LassimProblem, SortedDict, bool):
     react_mask = solution.react_mask
     # checks how many true are still present in the reaction mask. If > 0, it
     # means that there's still at least a reaction
     if react_mask[react_mask].size > 0:
         reactions = solution.reactions_ids
-        red_vect, new_reactions = remove_lowest_reaction(
+        reduced_vect, new_reactions = remove_lowest_reaction(
             solution.solution_vector, reactions
         )
         new_react, new_mask = generate_reactions_vector(new_reactions)
@@ -113,7 +113,7 @@ def iter_function(factory: CoreProblemFactory, solution: Solution
         new_problem = factory.build(
             dim=len(new_reactions.keys()) * 2 + num_react,
             bounds=default_bounds(len(new_reactions.keys()), num_react),
-            vector_map=(new_react, new_mask),
+            vector_map=(new_react, new_mask), known_sol=[reduced_vect]
         )
         return new_problem, new_reactions, True
     else:

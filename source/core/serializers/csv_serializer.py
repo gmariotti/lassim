@@ -11,8 +11,8 @@ __version__ = "0.1.0"
 
 
 def default_filename_creator(num_solutions: int, num_variables: int) -> str:
-    return "top{}solutions_{}variables.csv".format(
-        str(num_solutions), str(num_variables)
+    return "top{}solutions_{}variables_{}.csv".format(
+        str(num_solutions), str(num_variables), str(os.getpid())
     )
 
 

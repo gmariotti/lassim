@@ -6,7 +6,7 @@ from sortedcontainers import SortedDict
 
 from core.core_problem import CoreProblemFactory
 from core.factories import OptimizationFactory
-from core.optimizations.basin_hopping import BHOptimization
+from core.optimizations.differential_evolution import DEOptimization
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
@@ -30,8 +30,8 @@ class TestOptimizationFactory(TestCase):
                       self.problem, SortedDict(), 0, None)
 
     def test_ValidShortOptimizationType(self):
-        expected = BHOptimization.type_name
-        actual = OptimizationFactory.get_optimization_type("BH")
+        expected = DEOptimization.type_name
+        actual = OptimizationFactory.get_optimization_type("DE")
         assert_equal(expected, actual,
                      "Expected {} but received {}".format(
                          expected, actual

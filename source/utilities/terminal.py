@@ -6,8 +6,8 @@ from typing import Dict, Tuple
 
 import psutil
 
-from core.base_optimization import OptimizationArgs
 from core.factories import OptimizationFactory
+from core.lassim_context import OptimizationArgs
 from utilities.logger_setup import LoggerSetup
 
 __author__ = "Guido Pio Mariotti"
@@ -28,7 +28,6 @@ messages = {
     # CORE OPTIONS
     "c-opt-type": "Type of optimization algorithm to use for the Core. "
                   "DE = Differential Evolution.\n"
-                  "SAC = Simulated Annealing Corana's\n"
                   "Default value is DE",
     "c-opt-json": "JSON file with the parameters for optimization of the Core.",
     "c-cores": "Number of cores used for optimization of the Core. Default for "
@@ -53,7 +52,7 @@ default = {
     "cores": psutil.cpu_count(),
     "evolutions": 1,
     "individuals": 6,
-    "pert-factor": 1
+    "pert-factor": 0
 }
 
 
@@ -61,7 +60,7 @@ def set_terminal_args(name: str) -> ArgumentParser:
     parser = ArgumentParser(name)
     # set terminal options
     set_files_args(parser)
-    set_optimization_args(parser)
+    set_core_optimization_args(parser)
     set_logger_args(parser)
     set_output_args(parser)
 
@@ -82,10 +81,10 @@ def set_files_args(parser: ArgumentParser):
                        help=messages["input-pert"])
 
 
-def set_optimization_args(parser: ArgumentParser):
+def set_core_optimization_args(parser: ArgumentParser):
     group = parser.add_argument_group("core optimization")
     group.add_argument("-cO", "--cOptimization",
-                       choices=["DE", "SAC"], default="DE",
+                       choices=["DE"], default="DE",
                        help=messages["c-opt-type"])
     group.add_argument("-cP", "--cParameters", metavar="json",
                        help=messages["c-opt-json"])
@@ -136,10 +135,10 @@ def get_terminal_args(parser: ArgumentParser
     get_logger_args(args, setup)
     files, is_pert = get_files_args(args)
     output = get_output_args(args)
-    optimization_args = get_optimization_args(args)
-    optimization_args.log_args(logging.getLogger(__name__), is_pert)
+    core_args = get_core_optimization_args(args)
+    core_args.log_args(logging.getLogger(__name__), is_pert)
 
-    return files, output, optimization_args
+    return files, output, core_args
 
 
 def get_logger_args(args, setup: LoggerSetup):
@@ -192,7 +191,7 @@ def get_files_args(args) -> (Dict[str, str], bool):
     return files, is_pert
 
 
-def get_optimization_args(args) -> OptimizationArgs:
+def get_core_optimization_args(args) -> OptimizationArgs:
     algorithm = OptimizationFactory.get_optimization_type(args.cOptimization)
     params = {}
     param_filename = args.cParameters

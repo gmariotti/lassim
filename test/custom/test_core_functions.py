@@ -1,3 +1,4 @@
+from collections import namedtuple
 from unittest import TestCase
 
 import numpy as np
@@ -10,7 +11,7 @@ from sortedcontainers import SortedDict, SortedSet
 from core.core_problem import CoreProblemFactory
 from core.functions.common_functions import odeint1e8_lassim
 from core.functions.perturbation_functions import perturbation_func_sequential
-from core.solution import Solution
+from core.solutions.lassim_solution import LassimSolution
 from customs.core_functions import generate_reactions_vector, \
     remove_lowest_reaction, default_bounds, iter_function
 
@@ -45,12 +46,15 @@ class TestCoreFunctions(TestCase):
 
         self.factory = CoreProblemFactory.new_instance(
             (data, sigma, times, pert_data), y0, odeint1e8_lassim,
-            perturbation_func_sequential, pert_factor=1
+            perturbation_func_sequential
         )
         self.fake_champion = champion()
         # 17 = 4lambdas + 4vmax + 9reactions
         self.fake_champion.x = np.linspace(0, 10, num=17)
         self.fake_champion.f = (0.99,)
+        # too lazy to create an entire CoreProblem
+        self.FakeProblem = namedtuple("FakeProblem",
+                                      ["vector_map", "vector_map_mask"])
 
     def test_DefaultBounds(self):
         expected = ([0.0, 0.0, 0.0, 0.0, -20.0, -20.0],
@@ -109,10 +113,10 @@ class TestCoreFunctions(TestCase):
     # What is important here, is that the function returns true or false
     # based on what is in the mask
     def test_IterationFunctionWithMaskAllFalse(self):
-        solution = Solution(
+        solution = LassimSolution(
             self.fake_champion, self.fake_reactions,
-            (np.linspace(0, 10, 9),
-             np.array([False for _ in range(0, 9)]))
+            self.FakeProblem(np.linspace(0, 10, 9),
+                             np.array([False for _ in range(0, 9)]))
         )
         new_problem, new_reactions, iteration = iter_function(
             self.factory, solution
@@ -122,9 +126,9 @@ class TestCoreFunctions(TestCase):
     def test_IterationFunctionWithMaskOneTrue(self):
         mask = [False for _ in range(0, 8)]
         mask.append(True)
-        solution = Solution(
+        solution = LassimSolution(
             self.fake_champion, self.fake_reactions,
-            (np.linspace(0, 10, 9), np.array(mask))
+            self.FakeProblem(np.linspace(0, 10, 9), np.array(mask))
         )
         new_problem, new_reactions, iteration = iter_function(
             self.factory, solution
@@ -135,18 +139,17 @@ class TestCoreFunctions(TestCase):
         mask = [False for _ in range(0, 7)]
         mask.append(True)
         mask.append(True)
-        solution = Solution(
+        solution = LassimSolution(
             self.fake_champion, self.fake_reactions,
-            (np.linspace(0, 10, 9), np.array(mask))
+            self.FakeProblem(np.linspace(0, 10, 9), np.array(mask))
         )
         for i in range(0, 9):
             new_problem, new_reactions, iteration = iter_function(
                 self.factory, solution
             )
             assert_true(iteration, "Expected iteration at try {}".format(i))
-            solution = Solution(
-                self.fake_champion, new_reactions,
-                (new_problem.vector_map, new_problem.vector_map_mask)
+            solution = LassimSolution(
+                self.fake_champion, new_reactions, new_problem
             )
         new_problem, new_reactions, iteration = iter_function(
             self.factory, solution

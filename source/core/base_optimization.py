@@ -1,13 +1,11 @@
-from logging import Logger
-from typing import Callable, Dict
+from typing import Callable
 
-import psutil
-from PyGMO import topology, archipelago
+from PyGMO import topology, archipelago, island
 from sortedcontainers import SortedDict, SortedList
 
-from core.core_system import CoreSystem
+from core.lassim_context import LassimContext
 from core.lassim_problem import LassimProblem, LassimProblemFactory
-from core.solution import Solution
+from core.solutions.lassim_solution import LassimSolution
 from core.solutions_handler import SolutionsHandler
 
 __author__ = "Guido Pio Mariotti"
@@ -24,19 +22,19 @@ class BaseOptimization:
     """
 
     def __init__(self, prob_factory: LassimProblemFactory,
-                 problem: LassimProblem, reactions: SortedDict,
+                 problem: LassimProblem, reactions: SortedDict, evolutions: int,
                  iter_func: Callable[..., bool]):
         self._probl_factory = prob_factory
         self._start_problem = problem
         self._start_reactions = reactions
         self._iterate = iter_func
+        self._context = None
         self._handler = None
-        self._core = None
         self._logger = None
-        self._evolutions = 0
+        self._evolutions = evolutions
         self._algorithm = None
 
-    def build(self, handler: SolutionsHandler, core: CoreSystem,
+    def build(self, context: LassimContext, handler: SolutionsHandler,
               **kwargs) -> 'BaseOptimization':
         raise NotImplementedError(self.build.__name__)
 
@@ -75,11 +73,12 @@ class BaseOptimization:
         except Exception:
             self._logger.exception("Exception occurred during solution...")
             self._logger.error("Returning solutions found so far")
-        return solutions
+        finally:
+            return solutions
 
     def __generate_solution(self, problem: LassimProblem, reactions: SortedDict,
                             n_individuals: int, n_threads: int, topol
-                            ) -> Solution:
+                            ) -> LassimSolution:
         """
         Creates a new archipelago to solve the problem with the DE algorithm.
         It returns the best solution found after the optimization process.
@@ -88,26 +87,31 @@ class BaseOptimization:
             self._algorithm, problem, n_threads, n_individuals,
             topology=topol
         )
+        # try to add islands with previously found best solutions
+        for pchamp in problem.champions:
+            isl = island(self._algorithm, problem, n_individuals)
+            isl.set_x(0, pchamp.x)
+            archi.push_back(isl)
         archi.evolve(self._evolutions)
         archi.join()
         # FIXME
         # self._archipelagos.append(archi)
-        solution = self._get_best_solution(
+        solution = self.__get_best_solution(
             archi, problem, reactions
         )
         return solution
 
     # not side-effect free but at least I isolated it
-    def _get_best_solution(self, archi: archipelago, prob: LassimProblem,
-                           reactions: SortedDict) -> Solution:
+    def __get_best_solution(self, archi: archipelago, prob: LassimProblem,
+                            reactions: SortedDict) -> LassimSolution:
         """
-        From an archipelago, generates the list of with the best solution for
-        each island, pass them to an instance of SolutionHandler and then
+        From an archipelago, generates the list of the best solutions for
+        each island. Then, it pass them to the instance of SolutionHandler and
         returns the best one.
         """
         champions = [isl.population.champion for isl in archi]
         solutions = SortedList(
-            [Solution(champ, reactions, (prob.vector_map, prob.vector_map_mask))
+            [self._context.SolutionClass(champ, reactions, prob)
              for champ in champions]
         )
         self._handler.handle_solutions(solutions)
@@ -115,75 +119,3 @@ class BaseOptimization:
 
     def print(self):
         raise NotImplementedError(self.print.__name__)
-
-
-class OptimizationArgs:
-    """
-    This class represents the list of arguments for an optimization. Except for
-    the number of cores, each argument is read-only and is initialized at class
-    instantiation.
-    """
-
-    def __init__(self, opt_type: str, params: Dict, num_cores: int,
-                 evolutions: int, individuals: int, pert_factor: float):
-        self.__type = opt_type
-        self.__params = params
-        self.__cores = num_cores
-        self.__islands = self.__cores
-        self.__evolutions = evolutions
-        self.__individuals = individuals
-        self.__pert_factor = pert_factor
-
-    @property
-    def type(self) -> str:
-        return self.__type
-
-    @property
-    def params(self) -> Dict:
-        return self.__params
-
-    @property
-    def num_cores(self) -> int:
-        return self.__cores
-
-    @num_cores.setter
-    def num_cores(self, num_cores: int):
-        self.__cores = num_cores
-        # if the number is less than one, then use all the CPUs available
-        if num_cores < 1:
-            self.__cores = psutil.cpu_count
-        self.__islands = num_cores
-
-    @property
-    def num_islands(self) -> int:
-        return self.__islands
-
-    @property
-    def num_evolutions(self) -> int:
-        return self.__evolutions
-
-    @property
-    def num_individuals(self) -> int:
-        return self.__individuals
-
-    @property
-    def pert_factor(self) -> float:
-        return self.__pert_factor
-
-    def log_args(self, logger: Logger, is_pert: bool = False):
-        """
-        Used to log the optimization arguments inserted by the user.
-        :param logger: the logging object to use
-        :param is_pert: if the presence of the perturbations factor has to be
-        logged or not.
-        """
-        logger.info("Algorithm used is {}".format(self.__type))
-        logger.info("Number of cores is {}".format(self.__cores))
-        logger.info("Number of evolutions for archipelago is {}".format(
-            self.__evolutions
-        ))
-        logger.info("Number of individuals for each island is {}".format(
-            self.__individuals
-        ))
-        if is_pert:
-            logger.info("Perturbations factor is {}".format(self.__pert_factor))

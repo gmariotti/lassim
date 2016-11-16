@@ -1,15 +1,15 @@
 import logging
-from typing import Dict, Callable
+from collections import namedtuple
+from typing import Dict, Callable, Tuple
 
 import numpy as np
 from sortedcontainers import SortedDict
 
-from core.base_optimization import BaseOptimization, OptimizationArgs
+from core.base_optimization import BaseOptimization
 from core.core_problem import CoreProblemFactory
 from core.core_system import CoreSystem
 from core.factories import OptimizationFactory
-from core.functions.common_functions import odeint1e8_lassim
-from core.functions.perturbation_functions import perturbation_func_sequential
+from core.lassim_context import OptimizationArgs, LassimContext
 from customs.core_functions import default_bounds, generate_reactions_vector, \
     iter_function
 from data_management.csv_format import parse_network, parse_time_sequence, \
@@ -27,52 +27,38 @@ __license__ = "GNU General Public License v3.0"
 __version__ = "0.1.0"
 
 
-def optimization_setup(files: Dict[str, str], opt_args: OptimizationArgs,
-                       ) -> (CoreSystem, Callable[..., BaseOptimization]):
-    # core construction
-    # custom, just for this case
-    core = create_core(files["network"])
+def create_core(network_file: str) -> CoreSystem:
+    tf_network = parse_network(network_file)
+    core = CoreSystem(tf_network)
+    logging.getLogger(__name__).info("\n" + str(core))
+    return core
 
+
+def problem_setup(files: Dict[str, str], context: LassimContext
+                  ) -> (Tuple, CoreProblemFactory):
+    DataTuple = namedtuple(
+        "DataTuple", ["data", "sigma", "times", "perturb", "y0"]
+    )
     data, sigma, times, y0 = data_parsing(files)
-    files_tuple = (data, sigma, times)
-    is_pert_prob, perturbations = data_parse_perturbations(files, core)
-
-    reactions_ids = SortedDict(core.from_reactions_to_ids())
+    is_pert_prob, perturbations = data_parse_perturbations(files, context.core)
 
     # creation of the correct type of problem to solve
     if is_pert_prob:
         problem_builder = CoreProblemFactory.new_instance(
-            (*files_tuple, perturbations), y0,
-            odeint1e8_lassim, perturbation_func_sequential,
-            opt_args.pert_factor
+            (data, sigma, times, perturbations), y0,
+            context.ode, context.perturbation,
         )
         logging.getLogger(__name__).info(
             "Created builder for problem with perturbations."
         )
     else:
         problem_builder = CoreProblemFactory.new_instance(
-            files_tuple, y0, odeint1e8_lassim
+            (data, sigma, times), y0, context.ode
         )
         logging.getLogger(__name__).info(
             "Created builder for problem without perturbations."
         )
-    problem = problem_builder.build(
-        dim=(core.num_tfacts * 2 + core.react_count),
-        bounds=default_bounds(core.num_tfacts, core.react_count),
-        vector_map=generate_reactions_vector(reactions_ids),
-    )
-    opt_builder = OptimizationFactory.new_optimization_instance(
-        opt_args.type, problem_builder, problem, reactions_ids,
-        opt_args.num_evolutions, iter_function
-    )
-    return core, opt_builder
-
-
-def create_core(network_file: str) -> CoreSystem:
-    tf_network = parse_network(network_file)
-    core = CoreSystem(tf_network)
-    logging.getLogger(__name__).info("\n" + str(core))
-    return core
+    return DataTuple(data, sigma, times, perturbations, y0), problem_builder
 
 
 def data_parsing(files: Dict[str, str]) -> (Vector, Vector, Vector, Vector):
@@ -134,3 +120,20 @@ def data_parse_perturbations(files: Dict[str, str], core: CoreSystem
         return is_present, pert_data
     except KeyError:
         return False, np.empty(0)
+
+
+def optimization_setup(core: CoreSystem, problem_builder: CoreProblemFactory,
+                       opt_args: OptimizationArgs
+                       ) -> Callable[..., BaseOptimization]:
+    reactions_ids = SortedDict(core.from_reactions_to_ids())
+    problem = problem_builder.build(
+        dim=(core.num_tfacts * 2 + core.react_count),
+        bounds=default_bounds(core.num_tfacts, core.react_count),
+        vector_map=generate_reactions_vector(reactions_ids),
+        pert_factor=opt_args.pert_factor
+    )
+    opt_builder = OptimizationFactory.new_optimization_instance(
+        opt_args.type, problem_builder, problem, reactions_ids,
+        opt_args.num_evolutions, iter_function
+    )
+    return opt_builder

@@ -20,13 +20,9 @@ class OptimizationFactory:
     """
     _optimizations = {
         DEOptimization.type_name: DEOptimization
-        # SACOptimization.type_name: SACOptimization,
-        # BHOptimization.type_name: BHOptimization
     }
     _labels = {
         "DE": DEOptimization.type_name
-        # "SAC": SACOptimization.type_name,
-        # "BH": BHOptimization.type_name
     }
 
     @classmethod

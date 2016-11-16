@@ -1,5 +1,6 @@
 from typing import List, Tuple
 
+from PyGMO.core import champion
 from PyGMO.problem import base
 
 from utilities.type_aliases import Tuple2V, Vector
@@ -13,7 +14,7 @@ __version__ = "0.1.0"
 class LassimProblem(base):
     """
     Interface of a common LASSIM problem. Every problem that are related to
-    LASSIM, should implement it.
+    LASSIM, should implement it and override the _objfun_impl method.
     """
 
     def _objfun_impl(self, x):
@@ -23,6 +24,17 @@ class LassimProblem(base):
              x_label: str, y_label: str):
         raise NotImplementedError(self.plot.__name__)
 
+    @property
+    def champions(self) -> List[champion]:
+        _champions = []
+        num_best_x = len(self.best_x)
+        for i in range(0, num_best_x):
+            champ = champion()
+            champ.x = self.best_x[i]
+            champ.f = self.best_f[i]
+            _champions.append(champ)
+        return _champions
+
 
 class LassimProblemFactory:
     """
@@ -30,5 +42,5 @@ class LassimProblemFactory:
     """
 
     def build(self, dim: int, bounds: Tuple[List[float], List[float]],
-              vector_map: Tuple2V):
+              vector_map: Tuple2V, known_sol: List[Vector], **kwargs):
         raise NotImplementedError(self.build.__name__)

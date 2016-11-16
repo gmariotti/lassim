@@ -1,7 +1,7 @@
 from typing import Tuple, Callable, List
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
 from core.lassim_problem import LassimProblem, LassimProblemFactory
 from utilities.type_aliases import Vector, Float, Tuple2V
@@ -28,7 +28,15 @@ class CoreProblem(LassimProblem):
     _s_y0 = np.empty(1)
     _s_ode_function = None
 
-    def __init__(self, dim: int = 1):
+    def __init__(self, dim: int = 1, known_sol: List[Vector] = None):
+        """
+        Constructor of a CoreProblem
+        :param dim: not used, present just for avoiding PyGMO crashes. Use
+        instead _s_dim for the problem dimension.
+        :param known_sol: List of known solutions previously found. They seems
+        to not help for speeding the optimization process, used them as a
+        comparison with the optimization results.
+        """
         # dim is the number of variables to optim ize
         super(CoreProblem, self).__init__(self._s_dim)
 
@@ -36,7 +44,7 @@ class CoreProblem(LassimProblem):
         np.seterr(over="ignore")
 
         # only arguments that should be public
-        self.vector_map, self.vector_map_mask = self._s_map_tuple
+        self.vector_map, self.vector_map_mask = CoreProblem._s_map_tuple
         if self.vector_map.shape != self.vector_map_mask.shape:
             raise ValueError(
                 "Map shape {} is different from mask shape {}".format(
@@ -44,8 +52,8 @@ class CoreProblem(LassimProblem):
                 ))
 
         # set parameters for objective function
-        self._data, self._sigma, self._time = self._s_cost_data
-        self._y0 = self._s_y0
+        self._data, self._sigma, self._time = CoreProblem._s_cost_data
+        self._y0 = CoreProblem._s_y0
 
         # check that data and sigma are compatible
         try:
@@ -56,12 +64,14 @@ class CoreProblem(LassimProblem):
                     self._data.shape, self._sigma.shape
                 ))
         self._sigma2 = np.power(self._sigma, 2)
-        self._size = self._s_y0.size
+        self._size = CoreProblem._s_y0.size
 
         # sets lower bounds and upper bounds
-        self.set_bounds(self._s_bounds[0], self._s_bounds[1])
+        self.set_bounds(CoreProblem._s_bounds[0], CoreProblem._s_bounds[1])
 
         self._result = np.empty(self._size)
+        if known_sol is not None:
+            self.best_x = [vector.tolist() for vector in known_sol]
 
     def _objfun_impl(self, x):
         """
@@ -124,13 +134,22 @@ class CoreWithPerturbationsProblem(CoreProblem):
     _s_pert_data = np.empty(1)
     _s_pert_factor = 0
 
-    def __init__(self, dim: int = 1):
-        super(CoreWithPerturbationsProblem, self).__init__(self._s_dim)
-
+    def __init__(self, dim: int = 1, known_sol: List[Vector] = None):
+        """
+        Constructor of a CoreWithPerturbationsProblem
+        :param dim: not used, present just for avoiding PyGMO crashes. Use
+        instead _s_dim for the problem dimension.
+        :param known_sol: List of known solutions previously found. They seems
+        to not help for speeding the optimization process, used them as a
+        comparison with the optimization results.
+        """
         # the perturbation data should be already formatted for the perturbation
         # function in order to make the problem as general as possible
-        self._pdata = self._s_pert_data
-        self._factor = self._s_pert_factor
+        self._pdata = CoreWithPerturbationsProblem._s_pert_data
+        self._factor = CoreWithPerturbationsProblem._s_pert_factor
+        super(CoreWithPerturbationsProblem, self).__init__(
+            self._s_dim, known_sol
+        )
 
     def _objfun_impl(self, x):
         """
@@ -171,7 +190,7 @@ class CoreProblemFactory(LassimProblemFactory):
     ], pert_function: Callable[
         [Vector, int, Vector, Vector, Vector, Vector, int,
          Callable[[Vector, Vector, Vector, Vector, Vector, int], Vector]],
-        float], pert_factor: float):
+        float]):
         CoreProblem._s_ode_function = ode_function
         # divides data considering presence or not of perturbations data
         if len(cost_data) == 4:
@@ -182,7 +201,6 @@ class CoreProblemFactory(LassimProblemFactory):
         self.__is_pert = False
         if pert_function is not None:
             CoreWithPerturbationsProblem._s_pert_function = pert_function
-            CoreWithPerturbationsProblem._s_pert_factor = pert_factor
             self.__is_pert = True
 
     @classmethod
@@ -191,7 +209,7 @@ class CoreProblemFactory(LassimProblemFactory):
     ], pert_function: Callable[
         [Vector, int, Vector, Vector, Vector, Vector, int,
          Callable[[Vector, Vector, Vector, Vector, Vector, int, Vector], Vector]
-         ], float] = None, pert_factor: float = 0) -> 'CoreProblemFactory':
+         ], float] = None) -> 'CoreProblemFactory':
         """
         Builds a factory for the generation of
         CoreProblem/CoreWithPerturbationsProblem instances with the parameters
@@ -202,17 +220,17 @@ class CoreProblemFactory(LassimProblemFactory):
         data.
         :param y0: Starting values for ODE evaluation.
         :param ode_function: Function for performing the ODE evaluation.
-        :param pert_function: Function for performing the perturbations impact.
-        :param pert_factor: The perturbations factor for perturbations impact.
+        :param pert_function: Function for evaluate the perturbations impact.
         :return: An instance of a CoreProblemFactory.
         """
         factory = CoreProblemFactory(
-            cost_data, y0, ode_function, pert_function, pert_factor
+            cost_data, y0, ode_function, pert_function
         )
         return factory
 
     def build(self, dim: int, bounds: Tuple[List[float], List[float]],
-              vector_map: Tuple2V) -> CoreProblem:
+              vector_map: Tuple2V, known_sol: List[Vector] = None,
+              pert_factor: float = 0, **kwargs) -> CoreProblem:
         """
         Construct a CoreProblem/CoreWithPerturbationsProblem with the parameters
         passed in the factory instantiation.
@@ -222,12 +240,16 @@ class CoreProblemFactory(LassimProblemFactory):
         :param vector_map: Tuple containing two vectors needed for the cost
         evaluation. Their values and their representation are independent from
         the problem.
+        :param known_sol: List of known solutions for this problem. Useful for
+        keeping trace of previously found solutions.
+        :param pert_factor: The perturbations factor for perturbations impact.
         :return: An instance of a CoreProblem/CoreWithPerturbationsProblem.
         """
         CoreProblem._s_dim = dim
         CoreProblem._s_bounds = bounds
         CoreProblem._s_map_tuple = vector_map
         if not self.__is_pert:
-            return CoreProblem()
+            return CoreProblem(known_sol=known_sol)
         else:
-            return CoreWithPerturbationsProblem()
+            CoreWithPerturbationsProblem._s_pert_factor = pert_factor
+            return CoreWithPerturbationsProblem(known_sol=known_sol)

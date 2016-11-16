@@ -45,7 +45,7 @@ class LassimContext:
         return self.__pert_function
 
     @property
-    def solution_class(self) -> Type[BaseSolution]:
+    def SolutionClass(self) -> Type[BaseSolution]:
         return self.__solution_class
 
 

@@ -1,5 +1,6 @@
 import os
 import shutil
+from collections import namedtuple
 from unittest import TestCase
 
 import numpy as np
@@ -9,10 +10,10 @@ from sortedcontainers import SortedList, SortedDict, SortedSet
 
 from core.serializers.csv_serializer import CSVSerializer, \
     default_filename_creator
-from core.solution import Solution
+from core.solutions.lassim_solution import LassimSolution
 
 
-def create_fake_solution(cost: float) -> Solution:
+def create_fake_solution(cost: float) -> LassimSolution:
     # first six values are lambdas and vmax
     fake_champion = champion()
     fake_champion.x = (1, 1.5, 0, 2, 2.5, 5, 1, 1, 1)
@@ -25,7 +26,13 @@ def create_fake_solution(cost: float) -> Solution:
                     np.array([False, False, False, True, False, True,
                               False, False, True])
                     )
-    return Solution(fake_champion, fake_reactions, fake_k_react)
+    # too lazy to create an entire CoreProblem
+    FakeProblem = namedtuple("FakeProblem", ["vector_map", "vector_map_mask"])
+
+    return LassimSolution(
+        fake_champion, fake_reactions,
+        FakeProblem(fake_k_react[0], fake_k_react[1])
+    )
 
 
 def fake_filename_creator(val1: int, val2: int):
@@ -113,7 +120,8 @@ class TestCSVSerializer(TestCase):
                     "1.5\t2.5\t1.0\t0.0\t1.0\n",
                     "0.0\t5.0\t0.0\t0.0\t1.0\n",
                     "Cost\t21.35\n"]
-        csv_file = self.output_dir + "/" + "top2solutions_9variables.csv"
+        csv_file = self.output_dir + "/" \
+                   + "top2solutions_9variables_{}.csv".format(os.getpid())
         with open(csv_file) as output:
             actual = [line for line in output]
 
