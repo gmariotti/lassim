@@ -1,3 +1,5 @@
+import logging
+
 from PyGMO import topology
 
 from core.functions.common_functions import odeint1e8_lassim
@@ -18,7 +20,7 @@ pipeline.
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 
 def lassim():
@@ -35,7 +37,7 @@ def lassim():
     # get a namedtuple with the data parsed and the factory for the problem
     # construction
     data, p_factory = problem_setup(files, context)
-    builder = optimization_setup(context.core, p_factory, context.opt_args)
+    base_builder = optimization_setup(context.core, p_factory, context.opt_args)
 
     # construct the solutions handlers for managing the solution of each
     # optimization step
@@ -44,12 +46,11 @@ def lassim():
     headers = ["lambda", "vmax"] + [tfact for tfact in core.tfacts]
     handler = SimpleCSVSolutionsHandler(output[0], output[1], headers)
     # building of the optimization based on the parameters passed as arguments
-    optimization = builder(context, handler)
-    # list of solutions from solving the problem
-    solutions = optimization.solve(
-        n_islands=opt_args.num_islands, n_individuals=opt_args.num_individuals,
-        topol=topology.ring()
+    optimization = base_builder.build(
+        context, handler, logging.getLogger(__name__)
     )
+    # list of solutions from solving the problem
+    solutions = optimization.solve(topol=topology.ring())
     final_handler = SimpleCSVSolutionsHandler(output[0], float("inf"), headers)
     final_handler.handle_solutions(solutions, "best_solutions.csv")
 

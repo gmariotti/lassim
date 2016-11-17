@@ -124,7 +124,7 @@ def data_parse_perturbations(files: Dict[str, str], core: CoreSystem
 
 def optimization_setup(core: CoreSystem, problem_builder: CoreProblemFactory,
                        opt_args: OptimizationArgs
-                       ) -> Callable[..., BaseOptimization]:
+                       ) -> BaseOptimization:
     reactions_ids = SortedDict(core.from_reactions_to_ids())
     problem = problem_builder.build(
         dim=(core.num_tfacts * 2 + core.react_count),
@@ -132,8 +132,7 @@ def optimization_setup(core: CoreSystem, problem_builder: CoreProblemFactory,
         vector_map=generate_reactions_vector(reactions_ids),
         pert_factor=opt_args.pert_factor
     )
-    opt_builder = OptimizationFactory.new_optimization_instance(
-        opt_args.type, problem_builder, problem, reactions_ids,
-        opt_args.num_evolutions, iter_function
+    opt_builder = OptimizationFactory.new_base_optimization(
+        opt_args.type, problem_builder, problem, reactions_ids, iter_function
     )
     return opt_builder

@@ -1,17 +1,16 @@
 from unittest import TestCase
 
 import numpy as np
-from nose.tools import assert_equal, assert_raises
+from nose.tools import assert_raises
 from sortedcontainers import SortedDict
 
 from core.core_problem import CoreProblemFactory
 from core.factories import OptimizationFactory
-from core.optimizations.differential_evolution import DEOptimization
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 
 class TestOptimizationFactory(TestCase):
@@ -23,21 +22,8 @@ class TestOptimizationFactory(TestCase):
             1, ([0], [1]), (np.ones(1), np.array([True]))
         )
 
-    def test_NotValidOptimizationType(self):
-        assert_raises(ReferenceError,
-                      OptimizationFactory.new_optimization_instance,
-                      "not-valid-type", self.factory,
-                      self.problem, SortedDict(), 0, None)
-
-    def test_ValidShortOptimizationType(self):
-        expected = DEOptimization.type_name
-        actual = OptimizationFactory.get_optimization_type("DE")
-        assert_equal(expected, actual,
-                     "Expected {} but received {}".format(
-                         expected, actual
-                     ))
-
-    def test_NotValidShortOptimizationType(self):
-        assert_raises(ReferenceError,
-                      OptimizationFactory.get_optimization_type,
-                      "not-valid")
+    def test_NotValidBaseOptimization(self):
+        assert_raises(KeyError,
+                      OptimizationFactory.new_base_optimization,
+                      "not-valid-type", self.factory, self.problem,
+                      SortedDict(), None)

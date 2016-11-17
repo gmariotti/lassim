@@ -1,15 +1,15 @@
-from typing import Callable
+from typing import Callable, List
 
+from PyGMO import algorithm
 from sortedcontainers import SortedDict
 
 from core.base_optimization import BaseOptimization
 from core.lassim_problem import LassimProblem, LassimProblemFactory
-from core.optimizations.differential_evolution import DEOptimization
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 
 class OptimizationFactory:
@@ -18,31 +18,45 @@ class OptimizationFactory:
     Not part of the BaseOptimization class with the purpose of avoiding any
     circular import, that seems to work/not working for no reason at all.
     """
-    _optimizations = {
-        DEOptimization.type_name: DEOptimization
-    }
-    _labels = {
-        "DE": DEOptimization.type_name
+    # They all have default values and they solve
+    # Continuous Unconstrained Single problems
+    _labels_cus = {
+        # Heuristic
+        "DE": algorithm.de,
+        "JDE": algorithm.jde,
+        "MDE_PBX": algorithm.mde_pbx,
+        "DE_1220": algorithm.de_1220,
+        "PSO": algorithm.pso,
+        "PSO_GEN": algorithm.pso_gen,
+        "SGA_GRAY": algorithm.sga_gray,
+        "SA_CORANA": algorithm.sa_corana,
+        "BEE_COLONY": algorithm.bee_colony,
+        "CMAES": algorithm.cmaes,
+        # Local
+        "CS": algorithm.cs,
+        "GSL_NM": algorithm.gsl_nm,
+        "GSL_NM2": algorithm.gsl_nm2,
+        "GSL_NM2RAND": algorithm.gsl_nm2rand,
+        "GSL_BFGS": algorithm.gsl_bfgs,
+        "GSL_BFGS2": algorithm.gsl_bfgs2,
+        "GSL_FR": algorithm.gsl_fr,
+        "GSL_PR": algorithm.gsl_pr
     }
 
     @classmethod
-    def new_optimization_instance(cls, opt_type: str,
-                                  prob_builder: LassimProblemFactory,
-                                  problem: LassimProblem, reactions: SortedDict,
-                                  evolutions: int,
-                                  iter_func: Callable[..., bool] = None
-                                  ) -> Callable[..., BaseOptimization]:
-        if opt_type in cls._optimizations:
-            optimization = cls._optimizations[opt_type](
-                prob_builder, problem, reactions, evolutions, iter_func
-            )
-            return optimization.build
-        else:
-            raise ReferenceError("{} is not a valid option".format(opt_type))
+    def labels_cus(cls) -> List[str]: return sorted(set(cls._labels_cus.keys()))
 
     @classmethod
-    def get_optimization_type(cls, short_type: str) -> str:
-        if short_type in cls._labels:
-            return cls._labels[short_type]
-        else:
-            raise ReferenceError("{} is not a valid option".format(short_type))
+    def cus_default(cls) -> str: return cls.labels_cus()[0]
+
+    @classmethod
+    def new_base_optimization(cls, type: str,
+                              prob_builder: LassimProblemFactory,
+                              problem: LassimProblem, reactions: SortedDict,
+                              iter_func: Callable[..., bool] = None
+                              ) -> BaseOptimization:
+        # raises KeyError if not present
+        algo = cls._labels_cus[type]
+        return BaseOptimization(
+            algo, prob_builder, problem, reactions, iter_func
+        )

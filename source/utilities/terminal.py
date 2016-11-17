@@ -13,7 +13,7 @@ from utilities.logger_setup import LoggerSetup
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 messages = {
     # MANDATORY
@@ -27,8 +27,8 @@ messages = {
     # OPTIONAL
     # CORE OPTIONS
     "c-opt-type": "Type of optimization algorithm to use for the Core. "
-                  "DE = Differential Evolution.\n"
-                  "Default value is DE",
+                  "http://esa.github.io/pygmo/documentation/algorithms.html "
+                  "for the parameters. Valid one are {}.",
     "c-opt-json": "JSON file with the parameters for optimization of the Core.",
     "c-cores": "Number of cores used for optimization of the Core. Default for "
                "this system is {}.",
@@ -83,9 +83,12 @@ def set_files_args(parser: ArgumentParser):
 
 def set_core_optimization_args(parser: ArgumentParser):
     group = parser.add_argument_group("core optimization")
-    group.add_argument("-cO", "--cOptimization",
-                       choices=["DE"], default="DE",
-                       help=messages["c-opt-type"])
+    group.add_argument("-cO", "--cOptimization", metavar="type",
+                       choices=OptimizationFactory.labels_cus(),
+                       default=OptimizationFactory.cus_default(),
+                       help=messages["c-opt-type"].format(
+                           ", ".join(OptimizationFactory.labels_cus())
+                       ))
     group.add_argument("-cP", "--cParameters", metavar="json",
                        help=messages["c-opt-json"])
     group.add_argument("-cC", "--cCores", metavar="num",
@@ -192,7 +195,7 @@ def get_files_args(args) -> (Dict[str, str], bool):
 
 
 def get_core_optimization_args(args) -> OptimizationArgs:
-    algorithm = OptimizationFactory.get_optimization_type(args.cOptimization)
+    algorithm = args.cOptimization
     params = {}
     param_filename = args.cParameters
     if param_filename is not None and os.path.isfile(param_filename):
