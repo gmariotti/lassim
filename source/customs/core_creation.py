@@ -1,6 +1,6 @@
 import logging
 from collections import namedtuple
-from typing import Dict, Callable, Tuple
+from typing import Dict, Tuple
 
 import numpy as np
 from sortedcontainers import SortedDict
@@ -36,6 +36,7 @@ def create_core(network_file: str) -> CoreSystem:
 
 def problem_setup(files: Dict[str, str], context: LassimContext
                   ) -> (Tuple, CoreProblemFactory):
+    # TODO - consider injection from outside
     DataTuple = namedtuple(
         "DataTuple", ["data", "sigma", "times", "perturb", "y0"]
     )

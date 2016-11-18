@@ -7,13 +7,7 @@ from sortedcontainers import SortedList
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.1.0"
-
-
-def default_filename_creator(num_solutions: int, num_variables: int) -> str:
-    return "top{}solutions_{}variables_{}.csv".format(
-        str(num_solutions), str(num_variables), str(os.getpid())
-    )
+__version__ = "0.2.0"
 
 
 class CSVSerializer:
@@ -21,19 +15,18 @@ class CSVSerializer:
     This class represents a serializer of solutions in a csv formatted file.
     """
 
-    def __init__(self, directory: str, num_to_print: int, headers: List[str],
+    def __init__(self, directory: str, n_print: int, headers: List[str],
                  filename_creator: Callable[[int, int], str]):
         self._directory = directory
-        self._num = num_to_print
+        self._num = n_print
         self._headers = headers
         self._filename_creator = filename_creator
         self._separator = "\t"
 
     @classmethod
-    def new_instance(cls, output_dir: str, num_to_print: int,
-                     headers: List[str],
+    def new_instance(cls, output_dir: str, n_print: int, headers: List[str],
                      filename_creator: Callable[[int, int], str]
-                     = default_filename_creator) -> 'CSVSerializer':
+                     ) -> 'CSVSerializer':
         if not os.path.isdir(output_dir):
             os.makedirs(output_dir)
         if len(headers) == 0:
@@ -41,7 +34,7 @@ class CSVSerializer:
                 "List of headers for solutions serialization is empty."
             )
         return CSVSerializer(
-            output_dir, num_to_print, headers, filename_creator
+            output_dir, n_print, headers, filename_creator
         )
 
     def serialize_solutions(self, solutions: SortedList, filename: str = None):

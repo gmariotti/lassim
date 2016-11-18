@@ -8,8 +8,8 @@ from PyGMO.core import champion
 from nose.tools import assert_list_equal
 from sortedcontainers import SortedList, SortedDict, SortedSet
 
-from core.serializers.csv_serializer import CSVSerializer, \
-    default_filename_creator
+from core.handlers.serializers.csv_serializer import CSVSerializer
+from core.handlers.csv_handlers import default_filename_creator
 from core.solutions.lassim_solution import LassimSolution
 
 
