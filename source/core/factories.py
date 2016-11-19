@@ -18,7 +18,6 @@ class OptimizationFactory:
     Not part of the BaseOptimization class with the purpose of avoiding any
     circular import, that seems to work/not working for no reason at all.
     """
-    # They all have default values and they solve
     # Continuous Unconstrained Single problems
     _labels_cus = {
         # Heuristic
@@ -31,23 +30,17 @@ class OptimizationFactory:
         "SGA_GRAY": algorithm.sga_gray,
         "SA_CORANA": algorithm.sa_corana,
         "BEE_COLONY": algorithm.bee_colony,
-        "CMAES": algorithm.cmaes,
-        # Local
-        "CS": algorithm.cs,
-        "GSL_NM": algorithm.gsl_nm,
-        "GSL_NM2": algorithm.gsl_nm2,
-        "GSL_NM2RAND": algorithm.gsl_nm2rand,
-        "GSL_BFGS": algorithm.gsl_bfgs,
-        "GSL_BFGS2": algorithm.gsl_bfgs2,
-        "GSL_FR": algorithm.gsl_fr,
-        "GSL_PR": algorithm.gsl_pr
+        "CMAES": algorithm.cmaes
     }
 
+    # They all have default values and they solve
     @classmethod
-    def labels_cus(cls) -> List[str]: return sorted(set(cls._labels_cus.keys()))
+    def labels_cus(cls) -> List[str]:
+        return sorted(set(cls._labels_cus.keys()))
 
     @classmethod
-    def cus_default(cls) -> str: return cls.labels_cus()[0]
+    def cus_default(cls) -> str:
+        return cls.labels_cus()[0]
 
     @classmethod
     def new_base_optimization(cls, type: str,
@@ -60,3 +53,21 @@ class OptimizationFactory:
         return BaseOptimization(
             algo, prob_builder, problem, reactions, iter_func
         )
+
+
+try:
+    # Add Local Optimization algorithms from GSL if PyGMO has been correctly
+    # compiled with GSL flag
+    gsl_algorithms = {
+        "CS": algorithm.cs,
+        "GSL_NM": algorithm.gsl_nm,
+        "GSL_NM2": algorithm.gsl_nm2,
+        "GSL_NM2RAND": algorithm.gsl_nm2rand,
+        "GSL_BFGS": algorithm.gsl_bfgs,
+        "GSL_BFGS2": algorithm.gsl_bfgs2,
+        "GSL_FR": algorithm.gsl_fr,
+        "GSL_PR": algorithm.gsl_pr,
+    }
+    OptimizationFactory._labels_cus.update(gsl_algorithms)
+except AttributeError:
+    pass
