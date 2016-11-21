@@ -30,6 +30,20 @@ class PlotSerializer:
                      filename_creator: Callable[
                          [str, List[str], BaseSolution], str]
                      ) -> 'PlotSerializer':
+        """
+        Creates a new instance of a PlotSerializer and returns it.
+        :param output_dir: Path where to save the plots. If it doesn't exist is
+        created automatically.
+        :param names: List of names for each plot.
+        :param axis: List of tuple containing the names for the x axis and y
+        axis. Must be of the same size of names
+        :param res_ode: Function that given as an input a BaseSolution returns
+        a tuple containing three np.ndarray for the plotting. First and second
+        return values must be the data to represent, the third value the time
+        sequence.
+        :param filename_creator: A creator of an unique name for each plot file.
+        :return: A PlotSerializer instance.
+        """
         if not os.path.isdir(output_dir):
             os.makedirs(output_dir)
         if len(axis) != len(names):
@@ -39,13 +53,20 @@ class PlotSerializer:
         )
 
     def serialize_solution(self, solution: BaseSolution, directory: str = None):
+        """
+        Plotting of a BaseSolution using the data received at instantiation time
+        and the results from the ODE function passed.
+        :param solution: a BaseSolution instance, doesn't matter how data are
+        represented.
+        :param directory: Optional value in case plots have to be saved in
+        another directory.
+        """
         outdir = self._directory
         if directory is not None and os.path.isdir(directory):
             os.makedirs(directory)
             outdir = directory
         generator = self._filename_creator(outdir, self._names, solution)
         figures_names = [name for name in generator]
-        # TODO - how to handle case for out of bound??
         idx = 0
         for data, results, time in self._res_ode(solution):
             plt.figure()
@@ -56,4 +77,7 @@ class PlotSerializer:
             plt.legend()
             plt.savefig(figures_names[idx])
             plt.close()
+            # out of bound check, avoid exception
             idx += 1
+            if idx >= len(self._axis):
+                break

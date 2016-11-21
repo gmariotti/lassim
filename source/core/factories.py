@@ -18,7 +18,7 @@ class OptimizationFactory:
     Not part of the BaseOptimization class with the purpose of avoiding any
     circular import, that seems to work/not working for no reason at all.
     """
-    # Continuous Unconstrained Single problems
+    # algorithms for solving Continuous Unconstrained Single problems
     _labels_cus = {
         # Heuristic
         "DE": algorithm.de,
