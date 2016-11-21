@@ -1,6 +1,5 @@
 import logging
-from collections import namedtuple
-from typing import Dict, Tuple
+from typing import Dict, Callable, NamedTuple
 
 import numpy as np
 from sortedcontainers import SortedDict
@@ -18,28 +17,43 @@ from utilities.type_aliases import Vector, Float
 
 """
 Set of custom functions for creation of the core and its optimization builder.
-Can be considered an example of typical use of the toolbox.
+Can be considered an example of possible integration of the source/core module
+in an already existing pipeline.
 """
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 
 def create_core(network_file: str) -> CoreSystem:
+    """
+    Creates a CoreSystem instance and logs it by reading the name of the network
+    file given as input.
+    :param network_file: Path of the file containing the network.
+    :return: An instance of the CoreProblem.
+    """
     tf_network = parse_network(network_file)
     core = CoreSystem(tf_network)
     logging.getLogger(__name__).info("\n" + str(core))
     return core
 
 
-def problem_setup(files: Dict[str, str], context: LassimContext
-                  ) -> (Tuple, CoreProblemFactory):
-    # TODO - consider injection from outside
-    DataTuple = namedtuple(
-        "DataTuple", ["data", "sigma", "times", "perturb", "y0"]
-    )
+def problem_setup(files: Dict[str, str], context: LassimContext,
+                  data_class: Callable[..., NamedTuple]
+                  ) -> (NamedTuple, CoreProblemFactory):
+    """
+    It setups the core problem factory for constructing core problems.
+    :param files: List of files path containing the data. Must be a dictionary
+    with the following keys: data, time and, optionally, perturbations.
+    :param context: a LassimContext instance.
+    :param data_class: A callable object that returns a namedtuple as output.
+    The data that takes as input must be the data, sigma, times, perturbations
+    and y0, all of them np.ndarray.
+    :return: A tuple with the namedtuple containing the data and an instance
+    of the problem factory.
+    """
     data, sigma, times, y0 = data_parsing(files)
     is_pert_prob, perturbations = data_parse_perturbations(files, context.core)
 
@@ -59,7 +73,7 @@ def problem_setup(files: Dict[str, str], context: LassimContext
         logging.getLogger(__name__).info(
             "Created builder for problem without perturbations."
         )
-    return DataTuple(data, sigma, times, perturbations, y0), problem_builder
+    return data_class(data, sigma, times, perturbations, y0), problem_builder
 
 
 def data_parsing(files: Dict[str, str]) -> (Vector, Vector, Vector, Vector):
@@ -101,6 +115,7 @@ def data_parse_perturbations(files: Dict[str, str], core: CoreSystem
     vector if not.
     """
     try:
+        # FIXME - perfect case for Optional.
         is_present = False
         pert_file = files["perturbations"]
         pert_data = parse_perturbations_data(pert_file)
@@ -121,11 +136,29 @@ def data_parse_perturbations(files: Dict[str, str], core: CoreSystem
         return is_present, pert_data
     except KeyError:
         return False, np.empty(0)
+    except OSError:
+        logging.getLogger(__name__).error("File {} doesn't exist.".format(
+            files["perturbations"]
+        ))
+        return False, np.empty(0)
 
 
 def optimization_setup(core: CoreSystem, problem_builder: CoreProblemFactory,
-                       opt_args: OptimizationArgs
-                       ) -> BaseOptimization:
+                       opt_args: OptimizationArgs) -> BaseOptimization:
+    """
+    Setup of a BaseOptimization instance, constructing the problem using the
+    input CoreSystem, the CoreProblemFactory and the OptimizationArgs.
+    For the problem bounds is used the custom.core_functions.default_bounds
+    function while for the vector map and its mask the
+    custom.core_functions.generate_reactions_vector.
+    :param core: An instance representing the CoreSystem to optimize.
+    :param problem_builder: A CoreProblemFactory for building the corresponding
+    problem to solve.
+    :param opt_args: The OptimizationArgs instance containing the arguments for
+    the optimization.
+    :return: The BaseOptimization class to use for building the instance that
+    will solve the problem.
+    """
     reactions_ids = SortedDict(core.from_reactions_to_ids())
     problem = problem_builder.build(
         dim=(core.num_tfacts * 2 + core.react_count),

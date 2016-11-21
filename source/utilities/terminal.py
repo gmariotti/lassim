@@ -22,13 +22,12 @@ messages = {
                   "Expected at least two files",
     "time-series": "The file path of the time series in which the data where "
                    "collected.",
-    "input-pert": "The file path of the perturbations file.",
 
     # OPTIONAL
     # CORE OPTIONS
     "c-opt-type": "Type of optimization algorithm to use for the Core. "
-                  "http://esa.github.io/pygmo/documentation/algorithms.html "
-                  "for the parameters. Valid one are {}.",
+                  "Look at PyGMO algorithms documentation for the list of "
+                  "valid parameters for each algorithm. Choices are {}.",
     "c-opt-json": "JSON file with the parameters for optimization of the Core.",
     "c-cores": "Number of cores used for optimization of the Core. Default for "
                "this system is {}.",
@@ -39,6 +38,7 @@ messages = {
     "c-pert-factor": "Indicates the importance of the perturbations in the "
                      "objective function of the Core. Must be a value between 0"
                      " and 1. Default is {}.",
+    "c-input-pert": "The file path of the perturbations file.",
 
     # GENERAL
     "log": "Sets the name of the file where to save the logs other than on "
@@ -77,8 +77,6 @@ def set_files_args(parser: ArgumentParser):
                        help=messages["input-data"])
     group.add_argument("inputT", metavar="time-series",
                        help=messages["time-series"])
-    group.add_argument("--perturbations", metavar="input-perturbations",
-                       help=messages["input-pert"])
 
 
 def set_core_optimization_args(parser: ArgumentParser):
@@ -109,6 +107,8 @@ def set_core_optimization_args(parser: ArgumentParser):
                        help=messages["c-pert-factor"].format(
                            default["pert-factor"]
                        ))
+    group.add_argument("--cPerturbations", metavar="file",
+                       help=messages["c-input-pert"])
 
 
 def set_logger_args(parser: ArgumentParser):
@@ -177,7 +177,7 @@ def get_files_args(args) -> (Dict[str, str], bool):
         "data": args.inputD,
         "time": args.inputT,
     }
-    pert_file = getattr(args, "perturbations")
+    pert_file = getattr(args, "cPerturbations")
     if pert_file is not None and not os.path.isfile(pert_file):
         logger.error("File {} doesn't exist.".format(pert_file))
         exit(0)
