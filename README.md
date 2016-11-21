@@ -31,7 +31,7 @@ to give the possibility to whoever is interested in the project to help its deve
 
 How to install and use the toolbox
 ----------------------------------
-Before using the the toolbox, be sure to satisfy all the requirements in the [Development environment and requirements](#Development-environment-and-requirements). After you have done that, run the following command from a terminal:
+Before using the the toolbox, be sure to satisfy all the requirements in the [Development environment and requirements](#development-environment-and-requirements). After you have done that, run the following command from a terminal:
 ```
 git clone https://github.com/gmariotti/lassim.git
 cd lassim/source/core
@@ -49,7 +49,7 @@ The current environment on which the toolbox is developed and tested is:
 - [Linux Mint 18 Cinnamon](https://linuxmint.com/)
 - [PyCharm Community 2016.2](https://www.jetbrains.com/pycharm/)
 - [Anaconda 4.1.1](https://anaconda.org/) with Python 3.5.2
-- [Boost 1.61.0](www.boost.org)
+- [Boost 1.61.0](http://www.boost.org)
 - [GSL 2.2.1](http://ftp.acc.umu.se/mirror/gnu.org/gnu/gsl/)
 - [clang 3.8](http://clang.llvm.org/)
 

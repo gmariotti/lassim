@@ -3,8 +3,8 @@ INSTALLATION GUIDE
 
 How to use the toolbox
 ----------------------
-Before running the LASSIM toolbox is necessary to have completed the steps [Boost installation](#Boost-installation), 
-[GSL installation](#GSL-installation), [PyGMO installation](#PyGMO-installation). Use the files in the `examples` folder for testing it or as an 
+Before running the LASSIM toolbox is necessary to have completed the steps [Boost installation](#boost-installation), 
+[GSL installation](#gsl-installation), [PyGMO installation](#pygmo-installation). Use the files in the `examples` folder for testing it or as an 
 example on how to format your data.
 
 **[!]** Sometimes is possible that Boost and/or GSL are already installed in your system. Try to build 
@@ -12,7 +12,7 @@ PyGMO against them, but if any error occurs, start considering the possibility o
 
 Boost installation
 ------------------
-Download `boost_<version>.tar.gz` from [boost website](www.boost.org), then run the following commands:
+Download `boost_<version>.tar.gz` from [boost website](http://www.boost.org), then run the following commands:
 ```
 tar -xvzf boost_<version>.tar.gz
 cd boost_<version>
