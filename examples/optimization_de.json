@@ -1,4 +1,9 @@
 {
-  "gen": 200,
+  "gen": 2,
+  "xtol": 0.01,
+  "ftol": 0.01,
+  "variant": 3,
+  "f": 0.85,
+  "cr": 1,
   "screen_output": true
 }

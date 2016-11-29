@@ -2,8 +2,14 @@
 .idea/
 *.iml
 
-# Python stuff
-.pyc
+# Python and C stuff
+*.pyc
+*.c
+*.so
+*.html
 
 # Custom stuff
 OUTPUT/
+cluster/
+source/core/build/
+analysis_*/

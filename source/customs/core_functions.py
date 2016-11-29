@@ -1,22 +1,23 @@
 import logging
 from copy import deepcopy
-from typing import List, Tuple
+from typing import List
 
 import numpy as np
 from sortedcontainers import SortedDict
 
-from core.core_problem import CoreProblem, CoreProblemFactory
-from core.solution import Solution
-from utilities.type_aliases import Vector
+from core.core_problem import CoreProblemFactory
+from core.lassim_problem import LassimProblem
+from core.solutions.lassim_solution import LassimSolution
+from core.utilities.type_aliases import Vector, Float
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.1"
+__version__ = "0.1.0"
 
 
 def default_bounds(num_tfacts: int, num_react: int
-                   ) -> Tuple[List[float], List[float]]:
+                   ) -> (List[float], List[float]):
     """
     Creates a tuple containing as first element the list of lower bounds, and as
     second element the list of upper bounds for the parameter to optimize.
@@ -34,7 +35,7 @@ def default_bounds(num_tfacts: int, num_react: int
     return lower_bounds, upper_bounds
 
 
-def generate_reactions_vector(reactions: SortedDict, dt_react=np.float64
+def generate_reactions_vector(reactions: SortedDict, dt_react=Float
                               ) -> (Vector, Vector):
     """
     From a reactions map, generates the corresponding numpy vector for
@@ -96,24 +97,24 @@ def remove_lowest_reaction(vres: Vector, reactions: SortedDict
     raise IndexError("Index {} to remove not found!!".format(min_index))
 
 
-# TODO - move to a default file not related to the Core
-def iter_function(factory: CoreProblemFactory, solution: Solution
-                  ) -> (Tuple[CoreProblem, SortedDict], bool):
+# FIXME - move to a default file not related to the Core
+def iter_function(factory: CoreProblemFactory, solution: LassimSolution
+                  ) -> (LassimProblem, SortedDict, bool):
     react_mask = solution.react_mask
     # checks how many true are still present in the reaction mask. If > 0, it
     # means that there's still at least a reaction
-    if react_mask[react_mask == True].size > 0:
-        reactions = solution.get_reactions_ids()
-        red_vect, new_reactions = remove_lowest_reaction(
-            solution.get_solution_vector(), reactions
+    if react_mask[react_mask].size > 0:
+        reactions = solution.reactions_ids
+        reduced_vect, new_reactions = remove_lowest_reaction(
+            solution.solution_vector, reactions
         )
         new_react, new_mask = generate_reactions_vector(new_reactions)
         num_react = new_react[new_mask].size
         new_problem = factory.build(
             dim=len(new_reactions.keys()) * 2 + num_react,
             bounds=default_bounds(len(new_reactions.keys()), num_react),
-            reactions=(new_react, new_mask),
+            vector_map=(new_react, new_mask), known_sol=[reduced_vect]
         )
-        return (new_problem, new_reactions), True
+        return new_problem, new_reactions, True
     else:
-        return None, False
+        return None, None, False
