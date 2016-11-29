@@ -24,12 +24,13 @@ class BaseOptimization:
     """
 
     def __init__(self, algo, prob_factory: LassimProblemFactory,
-                 problem: LassimProblem, reactions: SortedDict,
+                 prob: LassimProblem, reactions: SortedDict,
                  iter_func: Callable[..., bool]):
         self._algorithm = algo
-        self._probl_factory = prob_factory
-        self._start_problem = problem
+        self._prob_factory = prob_factory
+        self._start_problem = prob
         self._start_reactions = reactions
+        # can be None, remember it
         self._iterate = iter_func
 
         # this value will be set after a call to build
@@ -43,24 +44,35 @@ class BaseOptimization:
     def build(self, context: LassimContext, handler: SolutionsHandler,
               logger: logging.Logger, **kwargs) -> 'BaseOptimization':
         """
-
-        :param context:
-        :param handler:
-        :param logger:
-        :param kwargs: Use kwargs for extra value in extension class
-        :return:
+        Used for building a BaseOptimization with the parameter passed in the
+        __init__ call.
+        :param context: A LassimContext instance. Its OptimizationArgs must
+        contain the type of algorithm to use and the parameters needed.
+        :param handler: The SolutionsHandler instance for manage the list of
+        solutions found in each iteration.
+        :param logger: A logger for logging various optimization steps.
+        :param kwargs: Use kwargs for extra value in extension class.
+        :return: the BaseOptimization instance built from the parameter context.
         """
-        opt_args = context.opt_args
-        valid_parameters = self.handle_parameters(opt_args)
-        logger.info("Optimization parameters are\n{}".format(valid_parameters))
-        algo = self._algorithm(**valid_parameters)
-        new_instance = BaseOptimization(
-            algo, self._probl_factory, self._start_problem,
+        new_instance = self.__class__(
+            self._algorithm, self._prob_factory, self._start_problem,
             self._start_reactions, self._iterate
         )
+        new_instance._logger = logger
         new_instance._context = context
         new_instance._handler = handler
-        new_instance._logger = logger
+
+        # optimization setup
+        opt_args = context.primary_first
+        valid_params = self.handle_parameters(opt_args)
+        if len(valid_params) > 0:
+            # from a callable of the algorithm, the _algorithm property changes
+            # to an instance of the algorithm
+            new_instance._algorithm = new_instance._algorithm(**valid_params)
+        else:
+            new_instance._algorithm = new_instance._algorithm()
+        new_instance._logger.info(str(new_instance._algorithm))
+
         # set the archipelago parameters
         new_instance._n_evolutions = opt_args.num_evolutions
         new_instance._n_islands = opt_args.num_islands
@@ -68,16 +80,30 @@ class BaseOptimization:
         return new_instance
 
     def handle_parameters(self, opt_args: OptimizationArgs):
+        """
+        Evaluates which parameters in the OptimizationArgs instance are valid
+        and which not for the algorithm set. Override this method if you want
+        to dynamically change the parameters between each optimization cycle.
+        :param opt_args: An instance of OptimizationArgs for testing the
+        parameters.
+        :return: A dictionary with just the valid parameters for the algorithm.
+        """
         valid_params = signature(self._algorithm.__init__).parameters
         input_params = opt_args.params
-        output_params = {
-            name: input_params[name]
-            for name in input_params
-            if name in valid_params
-        }
+        output_params = {name: input_params[name]
+                         for name in input_params
+                         if name in valid_params}
         return output_params
 
-    def solve(self, topol=topology.unconnected()) -> SortedList:
+    def solve(self, topol=topology.unconnected(), **kwargs) -> SortedList:
+        """
+        Tries to solve this optimization problem by generating a list of
+        BaseSolution ordered by their cost.
+        :param topol: The topology to use for the archipelago. The default value
+        is an unconnected topology.
+        :param kwargs: Extra parameters, to be used for method override.
+        :return: A SortedList of BaseSolution for this optimization problem.
+        """
         solutions = SortedList()
 
         try:
@@ -88,70 +114,92 @@ class BaseOptimization:
             solutions.add(solution)
             self._logger.info("({}) - New solution found.".format(iteration))
 
-            problem, reactions, do_iteration = self._iterate(
-                self._probl_factory, solution
-            )
-            while do_iteration:
-                solution = self._generate_solution(
-                    problem, reactions, topol
+            # check that the iteration function has been set
+            if self._iterate is not None:
+                prob, reactions, do_iteration = self._iterate(
+                    self._prob_factory, solution
                 )
-                solutions.add(solution)
-                iteration += 1
-                self._logger.info(
-                    "({}) - New solution found.".format(iteration)
-                )
-                problem, reactions, do_iteration = self._iterate(
-                    self._probl_factory, solution
-                )
-            self._logger.info("Differential evolution completed.")
+                while do_iteration:
+                    solution = self._generate_solution(
+                        prob, reactions, topol
+                    )
+                    solutions.add(solution)
+                    iteration += 1
+                    self._logger.info(
+                        "({}) - New solution found.".format(iteration)
+                    )
+                    prob, reactions, do_iteration = self._iterate(
+                        self._prob_factory, solution
+                    )
+            self._logger.info("BaseOptimization completed.")
         # FIXME - is horrible to have to catch all possible exceptions but
         # requires a bit of time to understand all the possible exceptions
         # that can be thrown.
         except Exception:
-            self._logger.exception("Exception occurred during solution...")
-            self._logger.error("Returning solutions found so far")
+            self._logger.exception("Exception occurred during execution...")
         finally:
+            self._logger.info("Returning solutions found.")
             return solutions
 
-    def _generate_solution(self, problem: LassimProblem, reactions: SortedDict,
+    def _generate_solution(self, prob: LassimProblem, reactions: SortedDict,
                            topol) -> LassimSolution:
         """
-        Creates a new archipelago to solve the problem with the DE algorithm.
-        It returns the best solution found after the optimization process.
+        Creates a new archipelago to solve the problem with the algorithm passed
+        as argument, it solve it, pass the list of solutions to the handler and
+        then returns the best solution found.
+        :param prob: The LassimProblem instance to solve.
+        :param reactions: The dictionary of reactions associated to the problem.
+        :param topol: The topology of the archipelago.
+        :return: The best solution found from the solving of the prob instance.
         """
-        archi = archipelago(
-            self._algorithm, problem, self._n_islands, self._n_individuals,
-            topology=topol
-        )
-        # try to add islands with previously found best solutions
-        for pchamp in problem.champions:
-            isl = island(self._algorithm, problem, self._n_individuals)
-            isl.set_x(0, pchamp.x)
-            archi.push_back(isl)
+        archi = self._generate_archipelago(prob, topol)
         archi.evolve(self._n_evolutions)
         archi.join()
-        # FIXME
-        # self._archipelagos.append(archi)
-        solution = self._get_best_solution(
-            archi, problem, reactions
-        )
-        return solution
+        solutions = self._get_solutions(archi, prob, reactions)
+        self._handler.handle_solutions(solutions)
+        return solutions[0]
 
-    # not side-effect free but at least I isolated it
-    def _get_best_solution(self, archi: archipelago, prob: LassimProblem,
-                           reactions: SortedDict) -> LassimSolution:
+    def _generate_archipelago(self, prob: LassimProblem, topol) -> archipelago:
         """
-        From an archipelago, generates the list of the best solutions for
-        each island. Then, it pass them to the instance of SolutionHandler and
-        returns the best one.
+        Generates a PyGMO.archipelago from an input problem and an input
+        topology. The algorithm used is the one set at creation time.
+        :param prob: The LassimProblem instance to solve.
+        :param topol: The wanted topology for the archipelago.
+        :return: The archipelago for solving the LassimProblem.
+        """
+        archi = archipelago(
+            self._algorithm, prob, self._n_islands - 1, self._n_individuals,
+            topology=topol
+        )
+        # this island is used to add previous champions to the archipelago
+        # population
+        isl = island(self._algorithm, prob, self._n_individuals)
+        prev_champions = prob.champions
+        i = 0
+        while i < self._n_individuals and i < len(prev_champions):
+            isl.set_x(i, prev_champions[i].x)
+            i += 1
+        # adds the island only if any previous champion was present
+        archi.push_back(isl)
+        return archi
+
+    def _get_solutions(self, archi: archipelago, prob: LassimProblem,
+                       reactions: SortedDict) -> SortedList:
+        """
+        From a PyGMO.archipelago, generates the list of best solutions created
+        from each island, constructing each solution using the class reference
+        in the context instance.
+        :param archi: The PyGMO.archipelago instance from which extracting the
+        solution of each island.
+        :param prob: The LassimProblem that has been solved by archi.
+        :param reactions: The map of reactions specific for this solution.
         """
         champions = [isl.population.champion for isl in archi]
         solutions = SortedList(
             [self._context.SolutionClass(champ, reactions, prob)
              for champ in champions]
         )
-        self._handler.handle_solutions(solutions)
-        return solutions[0]
+        return solutions
 
     def print(self):
         raise NotImplementedError(self.print.__name__)

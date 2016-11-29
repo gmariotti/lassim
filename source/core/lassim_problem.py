@@ -3,7 +3,7 @@ from typing import List, Tuple
 from PyGMO.core import champion
 from PyGMO.problem import base
 
-from utilities.type_aliases import Tuple2V, Vector
+from core.utilities.type_aliases import Vector
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
@@ -31,6 +31,14 @@ class LassimProblem(base):
             _champions.append(champ)
         return _champions
 
+    def __get_deepcopy__(self):
+        raise NotImplementedError(self.__get_deepcopy__.__name__)
+
+    def __deepcopy__(self, memodict={}):
+        self.__get_deepcopy__()
+
+    def __copy__(self):
+        self.__get_deepcopy__()
 
 class LassimProblemFactory:
     """
@@ -38,5 +46,6 @@ class LassimProblemFactory:
     """
 
     def build(self, dim: int, bounds: Tuple[List[float], List[float]],
-              vector_map: Tuple2V, known_sol: List[Vector], **kwargs):
+              vector_map: Tuple[Vector, ...], known_sol: List[Vector],
+              **kwargs):
         raise NotImplementedError(self.build.__name__)

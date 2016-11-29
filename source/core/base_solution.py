@@ -7,14 +7,14 @@ from PyGMO.core import champion
 from sortedcontainers import SortedDict
 
 from core.lassim_problem import LassimProblem
-from utilities.type_aliases import Float, Vector
+from core.utilities.type_aliases import Float, Vector
 
 
 class BaseSolution:
     def __init__(self, champ: champion, react_ids: SortedDict,
-                 probl: LassimProblem):
+                 prob: LassimProblem):
         self.result = champ
-        self._problem = probl
+        self._problem = prob
         self._solution = champ.x
         self._cost = champ.f[0]
         self._reactions_ids = react_ids

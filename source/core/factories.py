@@ -5,6 +5,7 @@ from sortedcontainers import SortedDict
 
 from core.base_optimization import BaseOptimization
 from core.lassim_problem import LassimProblem, LassimProblemFactory
+# from core.optimizations.multi_start_optimization import MultiStartOptimization
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
@@ -43,16 +44,51 @@ class OptimizationFactory:
         return cls.labels_cus()[0]
 
     @classmethod
-    def new_base_optimization(cls, type: str,
-                              prob_builder: LassimProblemFactory,
-                              problem: LassimProblem, reactions: SortedDict,
+    def new_base_optimization(cls, o_type: str, p_builder: LassimProblemFactory,
+                              prob: LassimProblem, reactions: SortedDict,
                               iter_func: Callable[..., bool] = None
                               ) -> BaseOptimization:
+        """
+        Factory method for creation of a BaseOptimization object.
+        :param o_type: The label of an valid optimization algorithm.
+        :param p_builder: A factory for building a LassimProblem instance.
+        :param prob: The LassimProblem instance to solve at first.
+        :param reactions: The dictionary with the reactions associated to the
+        LassimProblem
+        :param iter_func: An optional iteration function to run after each
+        completed optimization. Use it in order to dynamically change the
+        problem to solve and its reactions.
+        :return: An instance of BaseOptimization.
+        """
         # raises KeyError if not present
-        algo = cls._labels_cus[type]
+        algo = cls._labels_cus[o_type]
         return BaseOptimization(
-            algo, prob_builder, problem, reactions, iter_func
+            algo, p_builder, prob, reactions, iter_func
         )
+
+    # @classmethod
+    # def new_multistart_optimization(cls, o_type: str,
+    #                                 p_builder: LassimProblemFactory,
+    #                                 problem: LassimProblem,
+    #                                 reactions: SortedDict,
+    #                                 iter_func: Callable[..., bool],
+    #                                 sec_type: str) -> MultiStartOptimization:
+    #     """
+    #     TODO
+    #     :param o_type:
+    #     :param p_builder:
+    #     :param problem:
+    #     :param reactions:
+    #     :param iter_func:
+    #     :param sec_type:
+    #     :return:
+    #     """
+    #     # raises KeyError if not present
+    #     main_algo = cls._labels_cus[o_type]
+    #     sec_algo = cls._labels_cus[sec_type]
+    #     return MultiStartOptimization(
+    #         main_algo, sec_algo, p_builder, problem, reactions, iter_func
+    #     )
 
 
 try:

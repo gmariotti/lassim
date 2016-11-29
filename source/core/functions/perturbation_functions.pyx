@@ -3,6 +3,7 @@ cimport cython
 cimport numpy as np
 import numpy as np
 from numpy import linalg
+# from scipy import linalg
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"

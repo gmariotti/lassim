@@ -3,7 +3,7 @@ from typing import Tuple, Callable, List
 import numpy as np
 
 from core.lassim_problem import LassimProblem, LassimProblemFactory
-from utilities.type_aliases import Vector, Float, Tuple2V
+from core.utilities.type_aliases import Vector, Float, Tuple2V
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"

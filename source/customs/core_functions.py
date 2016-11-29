@@ -8,7 +8,7 @@ from sortedcontainers import SortedDict
 from core.core_problem import CoreProblemFactory
 from core.lassim_problem import LassimProblem
 from core.solutions.lassim_solution import LassimSolution
-from utilities.type_aliases import Vector, Float
+from core.utilities.type_aliases import Vector, Float
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"

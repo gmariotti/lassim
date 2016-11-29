@@ -65,7 +65,7 @@ PyGMO installation
 ------------------
 
 ```
-export CC=clang++
+export CC=clang
 export CXX=clang++
 
 git clone https://github.com/esa/pagmo.git
@@ -88,8 +88,9 @@ Then complete the installation with
 make
 make test
 make install
+python -c "from PyGMO import test; test.run_full_test_suite()"
 ```
-Make sure to pass all the test after the call to `make test`
+Make sure to pass all the test after the call to `make test` and `python -c ...`
 
 Then, add the following environment variables, usually by adding them to the `.bashrc` file
 ```

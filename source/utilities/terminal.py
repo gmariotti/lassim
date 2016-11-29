@@ -2,13 +2,20 @@ import json
 import logging
 import os
 from argparse import ArgumentParser
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 
 import psutil
 
 from core.factories import OptimizationFactory
 from core.lassim_context import OptimizationArgs
 from utilities.logger_setup import LoggerSetup
+
+"""
+This scripts contains all the possible terminal options of the user. Each
+script from the toolbox should set the options that it needs and get them
+from the terminal.
+It should be improved with using subcommands instead of independent scripts.
+"""
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
@@ -39,11 +46,17 @@ messages = {
                      "objective function of the Core. Must be a value between 0"
                      " and 1. Default is {}.",
     "c-input-pert": "The file path of the perturbations file.",
+    "c-sec-opt": "Similar to -cO, but the algorithm is for a secondary "
+                 "optimization.",
+    "c-sec-json": "Similar to -cP, but for the secondary algorithm.",
+    "c-sec-cores": "Similar to -cC, but for the secondary algorithm.",
+    "c-sec-evolutions": "Similar to -cE, but for the secondary algorithm.",
+    "c-sec-individuals": "Similar to -cI, but for the secondary algorithm.",
 
     # GENERAL
     "log": "Sets the name of the file where to save the logs other than on "
            "screen.",
-    "verbosity": "Increase verbosity of logs from WARNING to INFO.",
+    "verbosity": "Increase verbosity of logs with INFO too.",
     "output-dir": "Name of directory for output files.",
     "number-of-solutions": "For each iteration, number of solutions to save."
 }
@@ -51,20 +64,9 @@ messages = {
 default = {
     "cores": psutil.cpu_count(),
     "evolutions": 1,
-    "individuals": 6,
+    "individuals": 1,
     "pert-factor": 0
 }
-
-
-def set_terminal_args(name: str) -> ArgumentParser:
-    parser = ArgumentParser(name)
-    # set terminal options
-    set_files_args(parser)
-    set_core_optimization_args(parser)
-    set_logger_args(parser)
-    set_output_args(parser)
-
-    return parser
 
 
 def set_files_args(parser: ArgumentParser):
@@ -111,6 +113,32 @@ def set_core_optimization_args(parser: ArgumentParser):
                        help=messages["c-input-pert"])
 
 
+def set_core_secondary_optimization_args(parser: ArgumentParser):
+    # group for secondary optimization
+    group = parser.add_argument_group("secondary core optimization")
+    group.add_argument("--cSecOptimization", metavar="type",
+                       choices=OptimizationFactory.labels_cus(),
+                       default=None,
+                       help=messages["c-sec-opt"].format(
+                           ", ".join(OptimizationFactory.labels_cus())
+                       ))
+    group.add_argument("--cSecParameters", metavar="json",
+                       help=messages["c-sec-json"])
+    group.add_argument("--cSecCores", metavar="num",
+                       default=default["cores"], type=int,
+                       help=messages["c-sec-cores"].format(default["cores"]))
+    group.add_argument("--cSecEvolutions", metavar="num",
+                       default=default["evolutions"], type=int,
+                       help=messages["c-sec-evolutions"].format(
+                           default["evolutions"]
+                       ))
+    group.add_argument("--cSecIndividuals", metavar="num",
+                       default=default["individuals"], type=int,
+                       help=messages["c-sec-individuals"].format(
+                           default["individuals"]
+                       ))
+
+
 def set_logger_args(parser: ArgumentParser):
     group = parser.add_argument_group("log options")
     group.add_argument("-l", "--log", metavar="file",
@@ -129,21 +157,6 @@ def set_output_args(parser: ArgumentParser):
                        help=messages["number-of-solutions"])
 
 
-def get_terminal_args(parser: ArgumentParser
-                      ) -> (Dict[str, str], Tuple[str, int], OptimizationArgs):
-    setup = LoggerSetup()
-
-    # retrieve input from terminal
-    args = parser.parse_args()
-    get_logger_args(args, setup)
-    files, is_pert = get_files_args(args)
-    output = get_output_args(args)
-    core_args = get_core_optimization_args(args)
-    core_args.log_args(logging.getLogger(__name__), is_pert)
-
-    return files, output, core_args
-
-
 def get_logger_args(args, setup: LoggerSetup):
     # FIXME - I don't like it
     level = logging.WARNING
@@ -156,7 +169,7 @@ def get_logger_args(args, setup: LoggerSetup):
         logging.getLogger(__name__).info("log file is {}".format(args.log))
 
 
-def get_files_args(args) -> (Dict[str, str], bool):
+def get_files_args(args) -> Tuple[Dict[str, str], bool]:
     logger = logging.getLogger(__name__)
     if not os.path.isfile(args.inputN):
         logger.error("File {} doesn't exist".format(args.inputN))
@@ -194,7 +207,7 @@ def get_files_args(args) -> (Dict[str, str], bool):
     return files, is_pert
 
 
-def get_core_optimization_args(args) -> OptimizationArgs:
+def get_core_optimization_args(args) -> List[OptimizationArgs]:
     algorithm = args.cOptimization
     params = {}
     param_filename = args.cParameters
@@ -220,12 +233,42 @@ def get_core_optimization_args(args) -> OptimizationArgs:
     if pert_factor < 0 or pert_factor > 1:
         pert_factor = default["pert-factor"]
 
-    return OptimizationArgs(
+    return [OptimizationArgs(
         algorithm, params, cores, evols, individuals, pert_factor
-    )
+    )]
 
 
-def get_output_args(args) -> (str, int):
+def get_core_secondary_args(args) -> List[OptimizationArgs]:
+    algorithm = args.cSecOptimization
+    # if the secondary algorithm is not set, there's no need to check for other
+    # input parameters
+    if algorithm is None:
+        return []
+
+    # check the json file with the list of parameters
+    params = {}
+    param_filename = args.cSecParameters
+    if param_filename is not None and os.path.isfile(param_filename):
+        with open(param_filename) as params_json:
+            params = json.load(params_json)
+    cores = args.cSecCores
+    if cores <= 0:
+        cores = default["cores"]
+
+    evols = args.cSecEvolutions
+    if evols <= 0:
+        evols = default["evolutions"]
+
+    individuals = args.cSecIndividuals
+    if individuals <= 0:
+        individuals = default["individuals"]
+
+    return [OptimizationArgs(
+        algorithm, params, cores, evols, individuals, default["pert-factor"]
+    )]
+
+
+def get_output_args(args) -> Tuple[str, int]:
     logger = logging.getLogger(__name__)
     directory = getattr(args, "directory")
     if not os.path.isdir(directory):

@@ -36,18 +36,22 @@ Before using the the toolbox, be sure to satisfy all the requirements in the [De
 git clone https://github.com/gmariotti/lassim.git
 cd lassim/source/core
 ./scripts/install.sh
-python lassim.py <terminal-options>
 ```
 
-For having a list of the terminal options availables use the command:
-`python lassim.py -h` or `python lassim.py --help`
+For the core optimization, the command is:
+```
+python lassim_core.py <terminal-options>
+```
+while for the list of terminal options availables use the command:
+
+`python lassim_core.py -h` or `python lassim_core.py --help`
 
 Development environment and requirements
 ----------------------------------------
 The current environment on which the toolbox is developed and tested is:
 
 - [Linux Mint 18 Cinnamon](https://linuxmint.com/)
-- [PyCharm Community 2016.2](https://www.jetbrains.com/pycharm/)
+- [PyCharm 2016.x](https://www.jetbrains.com/pycharm/)
 - [Anaconda 4.1.1](https://anaconda.org/) with Python 3.5.2
 - [Boost 1.61.0](http://www.boost.org)
 - [GSL 2.2.1](http://ftp.acc.umu.se/mirror/gnu.org/gnu/gsl/)
@@ -73,8 +77,9 @@ but, even if not tested, there shouldn't be any issue with the gcc compiler too.
 What's next?
 ------------
 
+- Analysis of peripherals genes against an existing core system.
 - Possibility of installing `source/core` as a Python module.
-- Peripherals genes against the core system.
+- Configuration file for setting terminal parameters.
 - New kind of base implementation for the optimization process, in order to use different algorithm 
 in different ways.
 - New formats for input data.

@@ -88,3 +88,33 @@ cpdef np.ndarray[double, ndim=2] odeint1e8_lassim(np.ndarray[double] y0,
         args=(lambdas, vmax, np.reshape(k_map, (size, size)), ones, result),
         mxstep=int(1e8)
     )
+
+# FIXME - it exist only for debugging purposes, you should never use it
+def odeint1e9_lassim(y0, t, sol_vector, k_map, k_map_mask, size, result):
+    """
+    ODE function wrapping a call to scipy.integrate.odeint with mxstep=1e8.
+    :param y0: Values of y(0).
+    :param t: Time sequence to evaluate.
+    :param sol_vector: Solution vector for this system simulation.
+    :param k_map: Map of the reactions as a vector. Must have size*size elements
+    :param k_map_mask: Mask of the map of the reactions for map reshaping. Must
+    have the same number of elements of k_map.
+    :param size: Number of elements to consider.
+    :param result: Vector containing the result of each integration call.
+    Needed for performance purposes, it must of the same size of y0.
+    :return: The values after integration of this system. The return values are
+    the same of scipy.integrate.odeint
+    """
+    ones = np.ones(size)
+
+    lambdas = sol_vector[:size]
+    vmax = sol_vector[size: 2 * size]
+    k_values = sol_vector[2 * size:]
+
+    # map is a vector, but will be reshaped as a matrix size x size
+    k_map[k_map_mask] = k_values
+    return integrate.odeint(
+        lassim_function, y0, t,
+        args=(lambdas, vmax, np.reshape(k_map, (size, size)), ones, result),
+        mxstep=int(1e8)
+    )

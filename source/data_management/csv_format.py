@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 from sortedcontainers import SortedSet, SortedDict
 
-from utilities.type_aliases import Float, Vector
+from core.utilities.type_aliases import Float, Vector
 
 """
 The parsers are used for tabular separated files.

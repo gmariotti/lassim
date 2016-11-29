@@ -1,6 +1,7 @@
 import logging
+from argparse import ArgumentParser
 from collections import namedtuple
-from typing import Callable, NamedTuple
+from typing import Callable, NamedTuple, Iterable, Tuple, List, Dict
 
 import numpy as np
 from PyGMO import topology
@@ -9,13 +10,16 @@ from core.functions.common_functions import odeint1e8_lassim
 from core.functions.perturbation_functions import perturbation_func_sequential
 from core.handlers.composite_handler import CompositeSolutionsHandler
 from core.handlers.csv_handlers import SimpleCSVSolutionsHandler
-from core.handlers.plot_handlers import PlotBestSolutionsHandler
-from core.lassim_context import LassimContext
+from core.handlers.plot_handler import PlotBestSolutionsHandler
+from core.lassim_context import LassimContext, OptimizationArgs
 from core.solutions.lassim_solution import LassimSolution
+from core.utilities.type_aliases import Tuple3V
 from customs.core_creation import create_core, problem_setup, \
     optimization_setup
-from utilities.terminal import get_terminal_args, set_terminal_args
-from utilities.type_aliases import Tuple3V
+from utilities.logger_setup import LoggerSetup
+from utilities.terminal import set_files_args, set_core_optimization_args, set_logger_args, \
+    set_output_args, \
+    get_logger_args, get_files_args, get_output_args, get_core_optimization_args
 
 """
 This script and the functions used in it are how the toolbox works.
@@ -29,15 +33,44 @@ __license__ = "GNU General Public License v3.0"
 __version__ = "0.2.0"
 
 
+def lassim_core_terminal(script_name: str
+                         ) -> Tuple[Dict[str, str], Tuple[str, int],
+                                    List[OptimizationArgs],
+                                    List[OptimizationArgs]]:
+    parser = ArgumentParser(script_name)
+    # set terminal arguments
+    set_files_args(parser)
+    set_core_optimization_args(parser)
+    set_logger_args(parser)
+    set_output_args(parser)
+
+    # get terminal arguments
+    setup = LoggerSetup()
+
+    # retrieve input from terminal
+    args = parser.parse_args()
+    get_logger_args(args, setup)
+    files, is_pert = get_files_args(args)
+    output = get_output_args(args)
+    core_args = get_core_optimization_args(args)
+
+    logger = logging.getLogger(__name__)
+    logger.info("Logging Core Optimization arguments")
+    for core_arg in core_args:
+        core_arg.log_args(logger, is_pert)
+
+    return files, output, core_args, list()
+
+
 def data_producer(context: LassimContext, data_tuple: NamedTuple
-                  ) -> Callable[[LassimSolution], Tuple3V]:
+                  ) -> Callable[[LassimSolution], Iterable[Tuple3V]]:
     ode_function = context.ode
     y0 = data_tuple.y0
     time = data_tuple.times
     data = data_tuple.data
     result = np.empty(y0.size)
 
-    def wrapper(solution: LassimSolution):
+    def wrapper(solution: LassimSolution) -> Iterable[Tuple3V]:
         results = ode_function(
             y0, time, solution.solution_vector, solution.react_vect,
             solution.react_mask, y0.size, result
@@ -49,16 +82,16 @@ def data_producer(context: LassimContext, data_tuple: NamedTuple
     return wrapper
 
 
-def lassim():
-    script_name = "lassim"
+def lassim_core():
+    script_name = "lassim_core"
 
     # arguments from terminal are parsed
-    files, output, opt_args = get_terminal_args(set_terminal_args(script_name))
+    files, output, main_args, sec_args = lassim_core_terminal(script_name)
     core = create_core(files["network"])
     # create a context for solving this problem
     context = LassimContext(
-        core, opt_args, odeint1e8_lassim, perturbation_func_sequential,
-        LassimSolution
+        core, main_args, odeint1e8_lassim, perturbation_func_sequential,
+        LassimSolution, sec_args
     )
     # get a namedtuple with the data parsed and the factory for the problem
     # construction
@@ -67,7 +100,9 @@ def lassim():
         "DataTuple", ["data", "sigma", "times", "perturb", "y0"]
     )
     data, p_factory = problem_setup(files, context, DataTuple)
-    base_builder = optimization_setup(context.core, p_factory, context.opt_args)
+    base_builder = optimization_setup(context.core, p_factory,
+                                      context.primary_opts,
+                                      context.secondary_opts)
 
     # construct the solutions handlers for managing the solution of each
     # optimization step
@@ -92,4 +127,4 @@ def lassim():
 
 
 if __name__ == "__main__":
-    lassim()
+    lassim_core()
