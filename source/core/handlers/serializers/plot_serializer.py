@@ -93,6 +93,11 @@ class PlotSerializer:
 def plotting_function(data: Vector, results: Vector, time: Vector, x_label: str,
                       y_label: str, figure_name: str):
     try:
+        # to do in order to avoid the use of an X-server. For more info look at
+        # http://stackoverflow.com/questions/4706451/how-to-save-a-figure-remotely-with-pylab/4706614#4706614
+        import matplotlib
+        matplotlib.use("Agg")
+
         import matplotlib.pyplot as plt
         plt.figure()
         plt.xlabel(x_label)
