@@ -8,7 +8,7 @@ from core.utilities.type_aliases import Vector, Float, Tuple2V
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 
 class CoreProblem(LassimProblem):
@@ -86,8 +86,11 @@ class CoreProblem(LassimProblem):
             solution_vector, self.vector_map, self.vector_map_mask,
             self._size, self._result
         )
-        norm_results = results / np.amax(results, axis=0)
-        cost = np.sum(np.power((self._data - norm_results), 2) / self._sigma2)
+        norm_results = np.divide(results, np.amax(results, axis=0))
+        cost = np.sum(np.divide(np.power(
+            np.subtract(self._data, norm_results), 2),
+            self._sigma2
+        ))
 
         return (cost,)
 
@@ -143,7 +146,7 @@ class CoreWithPerturbationsProblem(CoreProblem):
         # cost and pert_cost are assumed independent from each other but running
         # them asynchronously with a pool is slower than doing that sequentially
         cost = super(CoreWithPerturbationsProblem, self)._objfun_impl(x)[0]
-        sol_vector = np.fromiter(x, dtype=Float)
+        sol_vector = np.asfortranarray(np.fromiter(x, dtype=Float))
         pert_cost = CoreWithPerturbationsProblem._s_pert_function(
             self._pdata, self._size, self._s_y0,
             sol_vector, self.vector_map, self.vector_map_mask,

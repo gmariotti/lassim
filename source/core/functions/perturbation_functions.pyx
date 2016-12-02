@@ -8,7 +8,7 @@ from numpy import linalg
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.1.0"
+__version__ = "0.3.0"
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
@@ -74,18 +74,20 @@ cpdef double perturbation_func_sequential(np.ndarray[double, ndim=2] pert_data,
                 y0, time_i, sol_vector, vector_map, vector_map_mask, size,
                 res_container
             )
-        sol_vector[i] = sol_vector[i] * pert_diag[i]
+        sol_vector[i] = np.multiply(sol_vector[i], pert_diag[i])
         temp_simul = ode(
             y0, time_i, sol_vector, vector_map, vector_map_mask, size,
             res_container
         )
         simulation[i * size: (i + 1) * size] = np.reshape(
-            temp_simul[t_size - 1] / control_dict[time_str][t_size - 1],
-            (size, 1)
+            np.divide(
+                temp_simul[t_size - 1],
+                control_dict[time_str][t_size - 1]
+            ), (size, 1)
         )
 
     # each row contains the vale in results
-    simulation -= ones
+    np.subtract(simulation, ones, simulation)
     simulation[simulation > 2] = 2
 
     # for linalg.lstsq, sim_fold must be a nx1 matrix while perturbations a

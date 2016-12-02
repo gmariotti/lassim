@@ -8,7 +8,7 @@ from Cython.Distutils import build_ext
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 PROFILING = False
 
@@ -34,7 +34,7 @@ extensions = [
 ]
 
 setup(
-    name="LASSIM Core",
+    name="LASSIM",
     version=__version__,
     url="https://github.com/gmariotti/lassim",
     license=__license__,
