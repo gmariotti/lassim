@@ -20,38 +20,39 @@ It should be improved with using subcommands instead of independent scripts.
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 messages = {
     # MANDATORY
     "input-network": "The file path of the transcription factors network.",
-    "input-data": "The files path of the data to analyze. "
-                  "Expected at least two files",
+    "input-data": "The files path of the data to analyze. Expected at least "
+                  "two files",
     "time-series": "The file path of the time series in which the data where "
                    "collected.",
+    "input-core": "The file path of the data related to an existing core",
+    "number-of-cpus": "The number of CPUs available for use. Default is {}",
 
     # OPTIONAL
-    # CORE OPTIONS
-    "c-opt-type": "Type of optimization algorithm to use for the Core. "
-                  "Look at PyGMO algorithms documentation for the list of "
-                  "valid parameters for each algorithm. Choices are {}.",
-    "c-opt-json": "JSON file with the parameters for optimization of the Core.",
-    "c-cores": "Number of cores used for optimization of the Core. Default for "
-               "this system is {}.",
-    "c-evolutions": "Number of evolutions for each archipelago for the Core. "
-                    "Default is {}.",
-    "c-individuals": "Number of individuals used in the optimization algorithm "
-                     "of the Core. Default is {}.",
-    "c-pert-factor": "Indicates the importance of the perturbations in the "
-                     "objective function of the Core. Must be a value between 0"
-                     " and 1. Default is {}.",
-    "c-input-pert": "The file path of the perturbations file.",
-    "c-sec-opt": "Similar to -cO, but the algorithm is for a secondary "
-                 "optimization.",
-    "c-sec-json": "Similar to -cP, but for the secondary algorithm.",
-    "c-sec-cores": "Similar to -cC, but for the secondary algorithm.",
-    "c-sec-evolutions": "Similar to -cE, but for the secondary algorithm.",
-    "c-sec-individuals": "Similar to -cI, but for the secondary algorithm.",
+    # OPTIMIZATION
+    "opt-type": "Type of optimization algorithm to use.  Look at PyGMO "
+                "algorithms documentation for the list of valid parameters for "
+                "each algorithm. Choices are {}.",
+    "opt-json": "JSON file with the parameters for the optimization algorithm.",
+    "cores": "Number of cores/islands used for the optimization process. "
+             "Default for this system is {}.",
+    "evolutions": "Number of evolutions for each archipelago. Default is {}.",
+    "individuals": "Number of individuals used in the optimization algorithm "
+                   "Default is {}.",
+    "pert-factor": "Indicates the importance of the perturbations in the "
+                   "objective function of the problem to solve. Must be a value"
+                   " between 0 and 1. Default is {}.",
+    "input-pert": "The file path of the perturbations file.",
+    "sec-opt": "Similar to -o, but the algorithm is for a secondary "
+               "optimization.",
+    "sec-json": "Similar to -p, but for the secondary algorithm.",
+    "sec-cores": "Similar to -c, but for the secondary algorithm.",
+    "sec-evolutions": "Similar to -e, but for the secondary algorithm.",
+    "sec-individuals": "Similar to -i, but for the secondary algorithm.",
 
     # GENERAL
     "log": "Sets the name of the file where to save the logs other than on "
@@ -69,107 +70,17 @@ default = {
 }
 
 
-def set_files_args(parser: ArgumentParser):
-    group = parser.add_argument_group("input data")
+def set_core_files_args(parser: ArgumentParser):
+    group = parser.add_argument_group("input data core")
     group.add_argument("inputN", metavar="input-network",
                        help=messages["input-network"])
-    # group.add_argument("inputD", metavar="input-data",
-    #                    help=messages["input-data"])
     group.add_argument("inputD", metavar="input-data", nargs="+",
                        help=messages["input-data"])
     group.add_argument("inputT", metavar="time-series",
                        help=messages["time-series"])
 
 
-def set_core_optimization_args(parser: ArgumentParser):
-    group = parser.add_argument_group("core optimization")
-    group.add_argument("-cO", "--cOptimization", metavar="type",
-                       choices=OptimizationFactory.labels_cus(),
-                       default=OptimizationFactory.cus_default(),
-                       help=messages["c-opt-type"].format(
-                           ", ".join(OptimizationFactory.labels_cus())
-                       ))
-    group.add_argument("-cP", "--cParameters", metavar="json",
-                       help=messages["c-opt-json"])
-    group.add_argument("-cC", "--cCores", metavar="num",
-                       default=default["cores"], type=int,
-                       help=messages["c-cores"].format(default["cores"]))
-    group.add_argument("-cE", "--cEvolutions", metavar="num",
-                       default=default["evolutions"], type=int,
-                       help=messages["c-evolutions"].format(
-                           default["evolutions"]
-                       ))
-    group.add_argument("-cI", "--cIndividuals", metavar="num",
-                       default=default["individuals"], type=int,
-                       help=messages["c-individuals"].format(
-                           default["individuals"]
-                       ))
-    group.add_argument("--cPerturbations-factor", metavar="num",
-                       default=default["pert-factor"], type=float,
-                       help=messages["c-pert-factor"].format(
-                           default["pert-factor"]
-                       ))
-    group.add_argument("--cPerturbations", metavar="file",
-                       help=messages["c-input-pert"])
-
-
-def set_core_secondary_optimization_args(parser: ArgumentParser):
-    # group for secondary optimization
-    group = parser.add_argument_group("secondary core optimization")
-    group.add_argument("--cSecOptimization", metavar="type",
-                       choices=OptimizationFactory.labels_cus(),
-                       default=None,
-                       help=messages["c-sec-opt"].format(
-                           ", ".join(OptimizationFactory.labels_cus())
-                       ))
-    group.add_argument("--cSecParameters", metavar="json",
-                       help=messages["c-sec-json"])
-    group.add_argument("--cSecCores", metavar="num",
-                       default=default["cores"], type=int,
-                       help=messages["c-sec-cores"].format(default["cores"]))
-    group.add_argument("--cSecEvolutions", metavar="num",
-                       default=default["evolutions"], type=int,
-                       help=messages["c-sec-evolutions"].format(
-                           default["evolutions"]
-                       ))
-    group.add_argument("--cSecIndividuals", metavar="num",
-                       default=default["individuals"], type=int,
-                       help=messages["c-sec-individuals"].format(
-                           default["individuals"]
-                       ))
-
-
-def set_logger_args(parser: ArgumentParser):
-    group = parser.add_argument_group("log options")
-    group.add_argument("-l", "--log", metavar="file",
-                       help=messages["log"])
-    group.add_argument("-v", "--verbosity", action="store_true",
-                       help=messages["verbosity"])
-
-
-def set_output_args(parser: ArgumentParser):
-    group = parser.add_argument_group("output files")
-    group.add_argument("-d", "--directory", metavar="dir",
-                       default="OUTPUT",
-                       help=messages["output-dir"])
-    group.add_argument("-n", "--number-solutions", metavar="num",
-                       default=3, type=int,
-                       help=messages["number-of-solutions"])
-
-
-def get_logger_args(args, setup: LoggerSetup):
-    # FIXME - I don't like it
-    level = logging.WARNING
-    if args.verbosity:
-        level = logging.INFO
-        setup.change_root_level(level)
-        setup.change_stream_level(level)
-    if args.log:
-        setup.set_file_log(args.log, level)
-        logging.getLogger(__name__).info("log file is {}".format(args.log))
-
-
-def get_files_args(args) -> Tuple[Dict[str, str], bool]:
+def get_core_files_args(args) -> Tuple[Dict[str, str], bool]:
     logger = logging.getLogger(__name__)
     if not os.path.isfile(args.inputN):
         logger.error("File {} doesn't exist".format(args.inputN))
@@ -190,7 +101,7 @@ def get_files_args(args) -> Tuple[Dict[str, str], bool]:
         "data": args.inputD,
         "time": args.inputT,
     }
-    pert_file = getattr(args, "cPerturbations")
+    pert_file = getattr(args, "perturbations")
     if pert_file is not None and not os.path.isfile(pert_file):
         logger.error("File {} doesn't exist.".format(pert_file))
         exit(0)
@@ -207,29 +118,79 @@ def get_files_args(args) -> Tuple[Dict[str, str], bool]:
     return files, is_pert
 
 
-def get_core_optimization_args(args) -> List[OptimizationArgs]:
-    algorithm = args.cOptimization
+def set_peripherals_files_args(parser: ArgumentParser):
+    group = parser.add_argument_group("input data peripherals")
+    group.add_argument("inputC", metavar="input-core",
+                       help=messages["input-core"])
+    group.add_argument("inputD", metavar="input-data", nargs="+",
+                       help=messages["input-data"])
+    group.add_argument("inputT", metavar="time-series",
+                       help=messages["time-series"])
+    group.add_argument("CPUs", metavar="num", type=int,
+                       help=messages["number-of-cpus"].format(
+                           default["cores"]
+                       ))
+
+
+def get_peripherals_files_args(parser: ArgumentParser):
+    pass
+
+
+def set_main_optimization_args(parser: ArgumentParser):
+    group = parser.add_argument_group("main optimization")
+    group.add_argument("-o", "--optimization", metavar="type",
+                       choices=OptimizationFactory.labels_cus(),
+                       default=OptimizationFactory.cus_default(),
+                       help=messages["opt-type"].format(
+                           ", ".join(OptimizationFactory.labels_cus())
+                       ))
+    group.add_argument("-p", "--parameters", metavar="json",
+                       help=messages["opt-json"])
+    group.add_argument("-c", "--cores", metavar="num",
+                       default=default["cores"], type=int,
+                       help=messages["cores"].format(default["cores"]))
+    group.add_argument("-e", "--evolutions", metavar="num",
+                       default=default["evolutions"], type=int,
+                       help=messages["evolutions"].format(
+                           default["evolutions"]
+                       ))
+    group.add_argument("-i", "--individuals", metavar="num",
+                       default=default["individuals"], type=int,
+                       help=messages["individuals"].format(
+                           default["individuals"]
+                       ))
+    group.add_argument("--perturbations-factor", metavar="num",
+                       default=default["pert-factor"], type=float,
+                       help=messages["pert-factor"].format(
+                           default["pert-factor"]
+                       ))
+    group.add_argument("--perturbations", metavar="file",
+                       help=messages["input-pert"])
+
+
+def get_main_optimization_args(args) -> List[OptimizationArgs]:
+    algorithm = args.optimization
     params = {}
-    param_filename = args.cParameters
+    param_filename = args.parameters
     if param_filename is not None and os.path.isfile(param_filename):
         with open(param_filename) as params_json:
             params = json.load(params_json)
 
     # get cores - checks if the user puts 0 or less. In this case uses the
     # default number in this system
-    cores = args.cCores
+    cores = args.cores
     if cores <= 0:
         cores = default["cores"]
 
-    evols = args.cEvolutions
+    evols = args.evolutions
     if evols <= 0:
         evols = default["evolutions"]
 
-    individuals = args.cIndividuals
+    individuals = args.individuals
     if individuals <= 0:
         individuals = default["individuals"]
 
-    pert_factor = getattr(args, "cPerturbations_factor")
+    pert_factor = getattr(args, "perturbations_factor")
     if pert_factor < 0 or pert_factor > 1:
         pert_factor = default["pert-factor"]
 
@@ -238,8 +199,34 @@ def get_core_optimization_args(args) -> List[OptimizationArgs]:
     )]
 
 
-def get_core_secondary_args(args) -> List[OptimizationArgs]:
-    algorithm = args.cSecOptimization
+def set_secondary_optimization_args(parser: ArgumentParser):
+    # group for secondary optimization
+    group = parser.add_argument_group("secondary optimization")
+    group.add_argument("--secOptimization", metavar="type",
+                       choices=OptimizationFactory.labels_cus(),
+                       default=None,
+                       help=messages["sec-opt"].format(
+                           ", ".join(OptimizationFactory.labels_cus())
+                       ))
+    group.add_argument("--secParameters", metavar="json",
+                       help=messages["sec-json"])
+    group.add_argument("--secCores", metavar="num",
+                       default=default["cores"], type=int,
+                       help=messages["sec-cores"].format(default["cores"]))
+    group.add_argument("--secEvolutions", metavar="num",
+                       default=default["evolutions"], type=int,
+                       help=messages["sec-evolutions"].format(
+                           default["evolutions"]
+                       ))
+    group.add_argument("--secIndividuals", metavar="num",
+                       default=default["individuals"], type=int,
+                       help=messages["sec-individuals"].format(
+                           default["individuals"]
+                       ))
+
+
+def get_secondary_args(args) -> List[OptimizationArgs]:
+    algorithm = args.secOptimization
     # if the secondary algorithm is not set, there's no need to check for other
     # input parameters
     if algorithm is None:
@@ -247,25 +234,55 @@ def get_core_secondary_args(args) -> List[OptimizationArgs]:
 
     # check the json file with the list of parameters
     params = {}
-    param_filename = args.cSecParameters
+    param_filename = args.secParameters
     if param_filename is not None and os.path.isfile(param_filename):
         with open(param_filename) as params_json:
             params = json.load(params_json)
-    cores = args.cSecCores
+    cores = args.secCores
     if cores <= 0:
         cores = default["cores"]
 
-    evols = args.cSecEvolutions
+    evols = args.secEvolutions
     if evols <= 0:
         evols = default["evolutions"]
 
-    individuals = args.cSecIndividuals
+    individuals = args.secIndividuals
     if individuals <= 0:
         individuals = default["individuals"]
 
     return [OptimizationArgs(
         algorithm, params, cores, evols, individuals, default["pert-factor"]
     )]
+
+
+def set_logger_args(parser: ArgumentParser):
+    group = parser.add_argument_group("log options")
+    group.add_argument("-l", "--log", metavar="file",
+                       help=messages["log"])
+    group.add_argument("-v", "--verbosity", action="store_true",
+                       help=messages["verbosity"])
+
+
+def get_logger_args(args, setup: LoggerSetup):
+    # FIXME - I don't like it
+    level = logging.WARNING
+    if args.verbosity:
+        level = logging.INFO
+        setup.change_root_level(level)
+        setup.change_stream_level(level)
+    if args.log:
+        setup.set_file_log(args.log, level)
+        logging.getLogger(__name__).info("log file is {}".format(args.log))
+
+
+def set_output_args(parser: ArgumentParser):
+    group = parser.add_argument_group("output files")
+    group.add_argument("-d", "--directory", metavar="dir",
+                       default="OUTPUT",
+                       help=messages["output-dir"])
+    group.add_argument("-n", "--number-solutions", metavar="num",
+                       default=3, type=int,
+                       help=messages["number-of-solutions"])
 
 
 def get_output_args(args) -> Tuple[str, int]:

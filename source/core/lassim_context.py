@@ -4,13 +4,13 @@ from typing import Dict, Type, Callable, List, Optional
 import psutil
 
 from core.base_solution import BaseSolution
-from core.core_system import CoreSystem
+from core.lassim_network import LassimNetwork
 from core.utilities.type_aliases import Vector
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 
 class LassimContext:
@@ -20,11 +20,12 @@ class LassimContext:
     solutions, the ode function to use, ..
     """
 
-    def __init__(self, core: CoreSystem, primary_opt: List['OptimizationArgs'],
+    def __init__(self, network: LassimNetwork,
+                 primary_opt: List['OptimizationArgs'],
                  ode_fun: Callable[..., Vector], pert_fun: Callable[..., float],
                  solution_class: Type[BaseSolution],
                  secondary_opt: List['OptimizationArgs'] = None):
-        self.__core_system = core
+        self.__network = network
         if len(primary_opt) == 0:
             raise ValueError("Primary optimization list can't be empty")
         self.__primary_opt = primary_opt
@@ -36,8 +37,8 @@ class LassimContext:
             self.__secondary_opt = secondary_opt
 
     @property
-    def core(self) -> CoreSystem:
-        return self.__core_system
+    def network(self) -> LassimNetwork:
+        return self.__network
 
     @property
     def primary_opts(self) -> List['OptimizationArgs']:

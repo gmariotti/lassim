@@ -17,9 +17,11 @@ from core.utilities.type_aliases import Tuple3V
 from customs.core_creation import create_core, problem_setup, \
     optimization_setup
 from utilities.logger_setup import LoggerSetup
-from utilities.terminal import set_files_args, set_core_optimization_args, set_logger_args, \
+from utilities.terminal import set_core_files_args, set_main_optimization_args, \
+    set_logger_args, \
     set_output_args, \
-    get_logger_args, get_files_args, get_output_args, get_core_optimization_args
+    get_logger_args, get_core_files_args, get_output_args, \
+    get_main_optimization_args
 
 """
 This script and the functions used in it are how the toolbox works.
@@ -39,8 +41,8 @@ def lassim_core_terminal(script_name: str
                                     List[OptimizationArgs]]:
     parser = ArgumentParser(script_name)
     # set terminal arguments
-    set_files_args(parser)
-    set_core_optimization_args(parser)
+    set_core_files_args(parser)
+    set_main_optimization_args(parser)
     set_logger_args(parser)
     set_output_args(parser)
 
@@ -50,12 +52,12 @@ def lassim_core_terminal(script_name: str
     # retrieve input from terminal
     args = parser.parse_args()
     get_logger_args(args, setup)
-    files, is_pert = get_files_args(args)
+    files, is_pert = get_core_files_args(args)
     output = get_output_args(args)
-    core_args = get_core_optimization_args(args)
+    core_args = get_main_optimization_args(args)
 
     logger = logging.getLogger(__name__)
-    logger.info("Logging Core Optimization arguments")
+    logger.info("Logging Core Optimization arguments...")
     for core_arg in core_args:
         core_arg.log_args(logger, is_pert)
 
@@ -100,9 +102,9 @@ def lassim_core():
         "DataTuple", ["data", "sigma", "times", "perturb", "y0"]
     )
     data, p_factory = problem_setup(files, context, DataTuple)
-    base_builder = optimization_setup(context.core, p_factory,
-                                      context.primary_opts,
-                                      context.secondary_opts)
+    base_builder = optimization_setup(
+        context.network, p_factory, context.primary_opts, context.secondary_opts
+    )
 
     # construct the solutions handlers for managing the solution of each
     # optimization step

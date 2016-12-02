@@ -6,9 +6,9 @@ from sortedcontainers import SortedDict
 
 from core.base_optimization import BaseOptimization
 from core.core_problem import CoreProblemFactory
-from core.core_system import CoreSystem
 from core.factories import OptimizationFactory
 from core.lassim_context import OptimizationArgs, LassimContext
+from core.lassim_network import CoreSystem, LassimNetwork
 from core.utilities.type_aliases import Vector, Float, Tuple4V
 from customs.core_functions import default_bounds, generate_reactions_vector, \
     iter_function
@@ -24,13 +24,14 @@ in an already existing pipeline.
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 
 def create_core(network_file: str) -> CoreSystem:
     """
     Creates a CoreSystem instance and logs it by reading the name of the network
     file given as input.
+
     :param network_file: Path of the file containing the network.
     :return: An instance of the CoreProblem.
     """
@@ -45,6 +46,7 @@ def problem_setup(files: Dict[str, str], context: LassimContext,
                   ) -> (NamedTuple, CoreProblemFactory):
     """
     It setups the core problem factory for constructing core problems.
+
     :param files: List of files path containing the data. Must be a dictionary
     with the following keys: data, time and, optionally, perturbations.
     :param context: a LassimContext instance.
@@ -55,7 +57,9 @@ def problem_setup(files: Dict[str, str], context: LassimContext,
     of the problem factory.
     """
     data, sigma, times, y0 = data_parsing(files)
-    is_pert_prob, perturbations = data_parse_perturbations(files, context.core)
+    is_pert_prob, perturbations = data_parse_perturbations(
+        files, context.network
+    )
 
     # creation of the correct type of problem to solve
     if is_pert_prob:
@@ -78,10 +82,11 @@ def problem_setup(files: Dict[str, str], context: LassimContext,
 
 def data_parsing(files: Dict[str, str]) -> Tuple4V:
     """
-    Generate the set of data used in the optimization from the file name
-    :param files: Dictionary with the filenames containing the data
+    Generate the set of data used in the optimization from the file name.
+
+    :param files: Dictionary with the file names containing the data.
     :return: Vector for mean of data, standard deviation, time series and
-    starting values at t0
+    starting values at t0.
     """
     time_seq = parse_time_sequence(files["time"])
     data_list = [parse_network_data(data_file) for data_file in files["data"]]
@@ -103,18 +108,20 @@ def data_parsing(files: Dict[str, str]) -> Tuple4V:
     return data_mean_n.T, std_dev.mean(axis=0), time_seq, data_mean.T[0].copy()
 
 
-def data_parse_perturbations(files: Dict[str, str], core: CoreSystem
+def data_parse_perturbations(files: Dict[str, str], network: LassimNetwork
                              ) -> (bool, Vector):
     """
     Parse the data for perturbations if they are present. If they are presents,
     checks that their size corresponds to the number of transcription factors
-    expected in the core.
+    expected in the core of the network.
+
     :param files: dictionary with, or without, a reference to a "perturbations"
     file.
-    :param core: CoreSystem object
+    :param network: The LassimNetwork object containing the CoreSystem.
     :return: True and parsed data if they are present and valid, False and empty
     vector if not.
     """
+    core = network.core
     try:
         # FIXME - perfect case for Optional.
         is_present = False
@@ -144,16 +151,19 @@ def data_parse_perturbations(files: Dict[str, str], core: CoreSystem
         return False, np.empty(0)
 
 
-def optimization_setup(core: CoreSystem, problem_builder: CoreProblemFactory,
+def optimization_setup(network: LassimNetwork,
+                       problem_builder: CoreProblemFactory,
                        main_args: List[OptimizationArgs],
                        sec_args: List[OptimizationArgs]) -> BaseOptimization:
     """
     Setup of a BaseOptimization instance, constructing the problem using the
-    input CoreSystem, the CoreProblemFactory and the OptimizationArgs.
+    input LassimNetwork, the CoreProblemFactory and the OptimizationArgs.
     For the problem bounds is used the custom.core_functions.default_bounds
     function while for the vector map and its mask the
     custom.core_functions.generate_reactions_vector.
-    :param core: An instance representing the CoreSystem to optimize.
+
+    :param network: An instance of LassimNetwork containing the current
+    CoreSystem to optimize.
     :param problem_builder: A CoreProblemFactory for building the corresponding
     problem to solve.
     :param main_args: The list of optimization algorithms for the main
@@ -163,6 +173,7 @@ def optimization_setup(core: CoreSystem, problem_builder: CoreProblemFactory,
     :return: The BaseOptimization class to use for building the instance that
     will solve the problem.
     """
+    core = network.core
     reactions_ids = SortedDict(core.from_reactions_to_ids())
 
     # depending on the secondary arguments, a different optimization instance

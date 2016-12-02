@@ -2,14 +2,15 @@ from unittest import TestCase
 
 from nose.tools import assert_dict_equal, assert_tuple_equal, assert_equal, \
     assert_raises
+from nose.tools import assert_set_equal
 from sortedcontainers import SortedDict, SortedSet
 
-from core.core_system import CoreSystem
+from core.lassim_network import CoreSystem, NetworkSystem
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.1.0"
+__version__ = "0.3.0"
 
 
 class TestCoreSystem(TestCase):
@@ -20,6 +21,7 @@ class TestCoreSystem(TestCase):
             "IRF4": SortedSet(["MAF", "STAT3"]),
             "MAF": SortedSet()
         })
+        self.assert_message = "Expected\n{}\nbut actual\n{}"
 
     def test_GenerationOfReactionsMapWithCorrection(self):
         expected_reactions = SortedDict({
@@ -35,7 +37,7 @@ class TestCoreSystem(TestCase):
         expected = (expected_reactions, expected_count)
         actual = (actual_reactions, actual_count)
         assert_tuple_equal(expected, actual,
-                           "Expected\n{}\nbut actual\n{}".format(
+                           self.assert_message.format(
                                expected, actual
                            ))
 
@@ -53,7 +55,7 @@ class TestCoreSystem(TestCase):
         expected = (expected_reactions, expected_count)
         actual = (actual_reactions, actual_count)
         assert_tuple_equal(expected, actual,
-                           "Expected\n{}\nbut actual\n{}".format(
+                           self.assert_message.format(
                                expected, actual
                            ))
 
@@ -67,7 +69,7 @@ class TestCoreSystem(TestCase):
         core = CoreSystem(self.fake_network)
         actual = dict(core.from_tfacts_to_ids())
         assert_dict_equal(expected, actual,
-                          "Expected\n{}\nbut actual\n{}".format(
+                          self.assert_message.format(
                               expected, actual
                           ))
 
@@ -81,7 +83,7 @@ class TestCoreSystem(TestCase):
         core = CoreSystem(self.fake_network)
         actual = dict(core.from_ids_to_tfacts())
         assert_dict_equal(expected, actual,
-                          "Expected\n{}\nbut actual\n{}".format(
+                          self.assert_message.format(
                               expected, actual
                           ))
 
@@ -95,7 +97,7 @@ class TestCoreSystem(TestCase):
         core = CoreSystem(self.fake_network)
         actual = dict(core.from_reactions_to_ids())
         assert_dict_equal(expected, actual,
-                          "Expected\n{}\nbut actual\n{}".format(
+                          self.assert_message.format(
                               expected, actual
                           ))
 
@@ -114,10 +116,10 @@ class TestCoreSystem(TestCase):
         })
         core = CoreSystem(self.fake_network)
         actual = SortedDict(core.from_reactions_ids_to_str(fake_reactions_ids))
-        assert_dict_equal(
-            expected, actual, "Expected\n{}\nbut actual\n{}".format(
-                expected, actual
-            ))
+        assert_dict_equal(expected, actual,
+                          self.assert_message.format(
+                              expected, actual
+                          ))
 
     def test_FromReactionsIDsToStrMapException(self):
         fake_reactions_ids = SortedDict({
@@ -143,6 +145,76 @@ class TestCoreSystem(TestCase):
                    "STAT3 --> IRF4"
         core = CoreSystem(self.fake_network)
         actual = str(core)
-        assert_equal(expected, actual, "Expected\n{}\nbut received\n{}".format(
-            expected, actual
-        ))
+        assert_equal(expected, actual,
+                     self.assert_message.format(
+                         expected, actual
+                     ))
+
+    def test_GenerateCoreFromReactions(self):
+        # these are the reactions from the network in setup without the
+        # correction
+        reactions = SortedDict({
+            "NFATC3": SortedSet(),
+            "STAT3": SortedSet(["IRF4"]),
+            "IRF4": SortedSet(["NFATC3"]),
+            "MAF": SortedSet(["NFATC3", "STAT3", "IRF4"])
+        })
+        core = CoreSystem.generate_core(reactions)
+        expected_tfacts = SortedSet(["NFATC3", "STAT3", "IRF4", "MAF"])
+        actual_tfacts = core.tfacts
+        assert_set_equal(expected_tfacts, actual_tfacts,
+                         self.assert_message.format(
+                             expected_tfacts, actual_tfacts
+                         ))
+        actual_reactions = core.reactions
+        assert_dict_equal(reactions, actual_reactions,
+                          self.assert_message.format(
+                              reactions, actual_reactions
+                          ))
+
+
+class TestNetworkSystem(TestCase):
+    def setUp(self):
+        core_network = SortedDict({
+            "NFATC3": SortedSet(["IRF4", "MAF"]),
+            "STAT3": SortedSet(["MAF"]),
+            "IRF4": SortedSet(["MAF", "STAT3"]),
+            "MAF": SortedSet()
+        })
+        self.core = CoreSystem(core_network)
+        self.fake_genes_net = SortedDict({
+            "1": SortedSet(),
+            "10": SortedSet(["IRF4", "MAF"]),
+            "14": SortedSet(["10"])
+        })
+        self.assert_message = "Expected\n{}\nbut actual\n{}"
+
+    def test_NetworkSystemCreation(self):
+        network = NetworkSystem(self.fake_genes_net, self.core)
+        exp_reactions = SortedDict({
+            "1": SortedSet(["NFATC3", "STAT3", "IRF4", "MAF"]),
+            "10": SortedSet(["IRF4", "MAF"]),
+            "14": SortedSet(["NFATC3", "STAT3", "IRF4", "MAF"])
+        })
+        exp_count = 10
+        assert_dict_equal(exp_reactions, network.reactions,
+                          self.assert_message.format(
+                              exp_reactions, network.reactions
+                          ))
+        assert_equal(exp_count, network.react_count,
+                     self.assert_message.format(
+                         exp_count, network.react_count
+                     ))
+
+    def test_NetworkReactionsToIDs(self):
+        network = NetworkSystem(self.fake_genes_net, self.core)
+        expected = SortedDict({
+            4: SortedSet([0, 1, 2, 3]),
+            5: SortedSet([0, 1]),
+            6: SortedSet([0, 1, 2, 3])
+        })
+        actual = SortedDict(network.from_reactions_to_ids())
+        assert_dict_equal(expected, actual,
+                          self.assert_message.format(
+                              expected, actual
+                          ))
