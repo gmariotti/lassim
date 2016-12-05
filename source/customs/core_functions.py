@@ -5,8 +5,8 @@ from typing import List
 import numpy as np
 from sortedcontainers import SortedDict
 
-from core.core_problem import CoreProblemFactory
 from core.lassim_problem import LassimProblem
+from core.problems.core_problem import CoreProblemFactory
 from core.solutions.lassim_solution import LassimSolution
 from core.utilities.type_aliases import Vector, Float
 

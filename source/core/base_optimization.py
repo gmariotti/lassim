@@ -13,7 +13,7 @@ from core.solutions_handler import SolutionsHandler
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 
 class BaseOptimization:
@@ -23,17 +23,17 @@ class BaseOptimization:
     the same optimization object but with different parameters.
     """
 
-    def __init__(self, algo, prob_factory: LassimProblemFactory,
-                 prob: LassimProblem, reactions: SortedDict,
-                 iter_func: Callable[..., bool]):
+    def __init__(self, algo, iter_func: Callable[..., bool]):
         self._algorithm = algo
-        self._prob_factory = prob_factory
-        self._start_problem = prob
-        self._start_reactions = reactions
         # can be None, remember it
         self._iterate = iter_func
 
-        # this value will be set after a call to build
+        # these values will be set after a call to build
+        # in this way is possible to instantiate this class multiple time
+        # without having to change the iteration function and the algorithm
+        self._prob_factory = None
+        self._start_problem = None
+        self._start_reactions = None
         self._context = None
         self._handler = None
         self._logger = None
@@ -41,26 +41,33 @@ class BaseOptimization:
         self._n_islands = 0
         self._n_individuals = 0
 
-    def build(self, context: LassimContext, handler: SolutionsHandler,
-              logger: logging.Logger, **kwargs) -> 'BaseOptimization':
+    def build(self, context: LassimContext, prob_factory: LassimProblemFactory,
+              start_problem: LassimProblem, reactions: SortedDict,
+              handler: SolutionsHandler, logger: logging.Logger,
+              **kwargs) -> 'BaseOptimization':
         """
         Used for building a BaseOptimization with the parameter passed in the
         __init__ call.
         :param context: A LassimContext instance. Its OptimizationArgs must
         contain the type of algorithm to use and the parameters needed.
+        :param prob_factory: The factory for building new instances of the
+        problem. At each iteration, it will be passed as argument of the
+        iter_func if has been set.
+        :param start_problem: The starting problem to solve.
+        :param reactions: The map of reactions for this problem.
         :param handler: The SolutionsHandler instance for manage the list of
         solutions found in each iteration.
         :param logger: A logger for logging various optimization steps.
         :param kwargs: Use kwargs for extra value in extension class.
         :return: the BaseOptimization instance built from the parameter context.
         """
-        new_instance = self.__class__(
-            self._algorithm, self._prob_factory, self._start_problem,
-            self._start_reactions, self._iterate
-        )
-        new_instance._logger = logger
+        new_instance = self.__class__(self._algorithm, self._iterate)
         new_instance._context = context
+        new_instance._prob_factory = prob_factory
+        new_instance._start_problem = start_problem
+        new_instance._start_reactions = reactions
         new_instance._handler = handler
+        new_instance._logger = logger
 
         # optimization setup
         opt_args = context.primary_first

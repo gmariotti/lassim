@@ -6,7 +6,7 @@ from PyGMO.core import champion
 from sortedcontainers import SortedDict
 
 from core.base_solution import BaseSolution
-from core.core_problem import CoreProblem
+from core.problems.core_problem import CoreProblem
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"

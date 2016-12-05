@@ -2,10 +2,9 @@ from unittest import TestCase
 
 import numpy as np
 from nose.tools import assert_raises
-from sortedcontainers import SortedDict
 
-from core.core_problem import CoreProblemFactory
 from core.factories import OptimizationFactory
+from core.problems.core_problem import CoreProblemFactory
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
@@ -25,5 +24,4 @@ class TestOptimizationFactory(TestCase):
     def test_NotValidBaseOptimization(self):
         assert_raises(KeyError,
                       OptimizationFactory.new_base_optimization,
-                      "not-valid-type", self.factory, self.problem,
-                      SortedDict(), None)
+                      "not-valid-type", None)

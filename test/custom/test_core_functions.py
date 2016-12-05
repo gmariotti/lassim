@@ -8,9 +8,7 @@ from nose.tools import assert_dict_equal, assert_tuple_equal, assert_false, \
 from numpy.testing import assert_array_equal
 from sortedcontainers import SortedDict, SortedSet
 
-from core.core_problem import CoreProblemFactory
-from core.functions.common_functions import odeint1e8_lassim
-from core.functions.perturbation_functions import perturbation_func_sequential
+from core.problems.core_problem import CoreProblemFactory
 from core.solutions.lassim_solution import LassimSolution
 from customs.core_functions import generate_reactions_vector, \
     remove_lowest_reaction, default_bounds, iter_function

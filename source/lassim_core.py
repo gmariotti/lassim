@@ -5,6 +5,7 @@ from typing import Callable, NamedTuple, Iterable, Tuple, List, Dict
 
 import numpy as np
 from PyGMO import topology
+from sortedcontainers import SortedDict
 
 from core.functions.common_functions import odeint1e8_lassim
 from core.functions.perturbation_functions import perturbation_func_sequential
@@ -32,7 +33,7 @@ pipeline.
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 
 def lassim_core_terminal(script_name: str
@@ -102,7 +103,7 @@ def lassim_core():
         "DataTuple", ["data", "sigma", "times", "perturb", "y0"]
     )
     data, p_factory = problem_setup(files, context, DataTuple)
-    base_builder = optimization_setup(
+    base_builder, start_problem = optimization_setup(
         context.network, p_factory, context.primary_opts, context.secondary_opts
     )
 
@@ -120,7 +121,9 @@ def lassim_core():
     handler = CompositeSolutionsHandler([csv_handler, plot_handler])
     # building of the optimization based on the parameters passed as arguments
     optimization = base_builder.build(
-        context, handler, logging.getLogger(__name__)
+        context, p_factory, start_problem,
+        SortedDict(core.from_reactions_to_ids()), handler,
+        logging.getLogger(__name__)
     )
     # list of solutions from solving the problem
     solutions = optimization.solve(topol=topology.ring())

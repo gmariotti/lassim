@@ -13,12 +13,13 @@ __version__ = "0.3.0"
 
 class CoreProblem(LassimProblem):
     """
-    This class is a representation of the optimization problem to solve of a
+    This class is a representation of an optimization problem for solving a
     core problem. It is completely independent on how the equations system is
     designed and solved.
     For compatibility purposes, the _s_ variables must be set before the
     creation of the problem. This is needed for extending a PyGMO.problem.base
     class and avoid exceptions during execution.
+    [!] NOT THREAD SAFE
     """
     _s_dim = 0
     _s_bounds = ([], [])
@@ -29,15 +30,16 @@ class CoreProblem(LassimProblem):
 
     def __init__(self, dim: int = 1, known_sol: List[Vector] = None):
         """
-        Constructor of a CoreProblem
+        Constructor of a CoreProblem.
+
         :param dim: not used, present just for avoiding PyGMO crashes. Use
         instead _s_dim for the problem dimension.
         :param known_sol: List of known solutions previously found. They seems
-        to not help for speeding the optimization process, used them as a
+        to not help for speeding the optimization process, use them as a
         comparison with the optimization results.
         """
         # dim is the number of variables to optim ize
-        super(CoreProblem, self).__init__(self._s_dim)
+        super(CoreProblem, self).__init__(CoreProblem._s_dim)
 
         # for numpy exp overflow
         np.seterr(over="ignore")
@@ -68,35 +70,37 @@ class CoreProblem(LassimProblem):
         # sets lower bounds and upper bounds
         self.set_bounds(CoreProblem._s_bounds[0], CoreProblem._s_bounds[1])
 
-        self._result = np.empty(self._size)
         if known_sol is not None:
             self.best_x = [vector.tolist() for vector in known_sol]
+
+        # these variables are used for performance efficiency
+        self._result_mem = np.empty(self._size)
+        self._cost_mem = np.empty(self._data.shape)
 
     def _objfun_impl(self, x):
         """
         Calculates the objective function for this problem with x as decision
         vector.
+
         :param x: Tuple containing the value of each parameter to optimize.
         :return: A tuple of a single value, containing the cost for this value
         of x.
         """
         solution_vector = np.fromiter(x, dtype=Float)
         results = CoreProblem._s_ode_function(
-            self._y0, self._time,
-            solution_vector, self.vector_map, self.vector_map_mask,
-            self._size, self._result
+            self._y0, self._time, solution_vector,
+            self.vector_map, self.vector_map_mask, self._size, self._result_mem
         )
         norm_results = np.divide(results, np.amax(results, axis=0))
         cost = np.sum(np.divide(np.power(
-            np.subtract(self._data, norm_results), 2),
-            self._sigma2
-        ))
+            np.subtract(self._data, norm_results), 2, out=self._cost_mem),
+            self._sigma2, out=self._cost_mem)
+        )
 
         return (cost,)
 
     def __get_deepcopy__(self):
-        copy = CoreProblem(dim=self.dimension)
-        return copy
+        return CoreProblem(dim=self.dimension)
 
     def __deepcopy__(self, memodict={}):
         return self.__get_deepcopy__()
@@ -112,6 +116,7 @@ class CoreWithPerturbationsProblem(CoreProblem):
     For compatibility purposes, the _s_ variables must be set before the
     creation of the problem. This is needed for extending a PyGMO.problem.base
     class and avoid exceptions during execution.
+    [!] NOT THREAD SAFE
     """
     _s_pert_function = None
     _s_pert_data = np.empty(1)
@@ -119,11 +124,12 @@ class CoreWithPerturbationsProblem(CoreProblem):
 
     def __init__(self, dim: int = 1, known_sol: List[Vector] = None):
         """
-        Constructor of a CoreWithPerturbationsProblem
+        Constructor of a CoreWithPerturbationsProblem.
+
         :param dim: not used, present just for avoiding PyGMO crashes. Use
         instead _s_dim for the problem dimension.
         :param known_sol: List of known solutions previously found. They seems
-        to not help for speeding the optimization process, used them as a
+        to not help for speeding the optimization process, use them as a
         comparison with the optimization results.
         """
         # the perturbation data should be already formatted for the perturbation
@@ -131,13 +137,14 @@ class CoreWithPerturbationsProblem(CoreProblem):
         self._pdata = CoreWithPerturbationsProblem._s_pert_data
         self._factor = CoreWithPerturbationsProblem._s_pert_factor
         super(CoreWithPerturbationsProblem, self).__init__(
-            self._s_dim, known_sol
+            CoreProblem._s_dim, known_sol
         )
 
     def _objfun_impl(self, x):
         """
         Calculates the objective function for this problem with x as decision
         vector.
+
         :param x: Tuple containing the value of each parameter to optimize.
         :return: A tuple of a single value, containing the cost for this value
         of x plus the influence of the perturbations data times the perturbation
@@ -158,8 +165,7 @@ class CoreWithPerturbationsProblem(CoreProblem):
         return (self._factor * pert_cost + cost,)
 
     def __get_deepcopy__(self):
-        copy = CoreWithPerturbationsProblem(dim=self.dimension)
-        return copy
+        return CoreWithPerturbationsProblem(dim=self.dimension)
 
 
 class CoreProblemFactory(LassimProblemFactory):
@@ -168,12 +174,13 @@ class CoreProblemFactory(LassimProblemFactory):
     Must be instantiated with a call to new_instance.
     """
 
-    def __init__(self, cost_data: Tuple, y0: Vector, ode_function: Callable[
-        [Vector, Vector, Vector, Vector, Vector, int], Vector
-    ], pert_function: Callable[
-        [Vector, int, Vector, Vector, Vector, Vector, int,
-         Callable[[Vector, Vector, Vector, Vector, Vector, int], Vector]],
-        float]):
+    def __init__(self, cost_data: Tuple[Vector, ...], y0: Vector,
+                 ode_function: Callable[
+                     [Vector, Vector, Vector, Vector, Vector, int], Vector],
+                 pert_function: Callable[
+                     [Vector, int, Vector, Vector, Vector, Vector, int,
+                      Callable[[Vector, Vector, Vector, Vector, Vector, int],
+                               Vector]], float]):
         CoreProblem._s_ode_function = ode_function
         # divides data considering presence or not of perturbations data
         if len(cost_data) == 4:
@@ -187,16 +194,19 @@ class CoreProblemFactory(LassimProblemFactory):
             self.__is_pert = True
 
     @classmethod
-    def new_instance(cls, cost_data: Tuple, y0: Vector, ode_function: Callable[
-        [Vector, Vector, Vector, Vector, Vector, int], Vector
-    ], pert_function: Callable[
-        [Vector, int, Vector, Vector, Vector, Vector, int,
-         Callable[[Vector, Vector, Vector, Vector, Vector, int, Vector], Vector]
-         ], float] = None) -> 'CoreProblemFactory':
+    def new_instance(cls, cost_data: Tuple[Vector, ...], y0: Vector,
+                     ode_function: Callable[
+                         [Vector, Vector, Vector, Vector, Vector, int], Vector],
+                     pert_function: Callable[
+                         [Vector, int, Vector, Vector, Vector, Vector, int,
+                          Callable[[Vector, Vector, Vector, Vector, Vector, int,
+                                    Vector], Vector]], float] = None
+                     ) -> 'CoreProblemFactory':
         """
         Builds a factory for the generation of
         CoreProblem/CoreWithPerturbationsProblem instances with the parameters
         passed as arguments.
+
         :param cost_data: Tuple containing the vectors for the cost evaluation.
         The first three elements must be the data, the sigma and the time
         sequence. An optional forth value means the presence of perturbations
@@ -206,9 +216,7 @@ class CoreProblemFactory(LassimProblemFactory):
         :param pert_function: Function for evaluate the perturbations impact.
         :return: An instance of a CoreProblemFactory.
         """
-        factory = CoreProblemFactory(
-            cost_data, y0, ode_function, pert_function
-        )
+        factory = CoreProblemFactory(cost_data, y0, ode_function, pert_function)
         return factory
 
     def build(self, dim: int, bounds: Tuple[List[float], List[float]],
@@ -217,6 +225,7 @@ class CoreProblemFactory(LassimProblemFactory):
         """
         Construct a CoreProblem/CoreWithPerturbationsProblem with the parameters
         passed in the factory instantiation.
+
         :param dim: Number of variables to optimize for the problem.
         :param bounds: Tuple with the list of lower bounds and upper bounds for
         each problem variable. Both list must be of the same size of dim.
@@ -226,6 +235,8 @@ class CoreProblemFactory(LassimProblemFactory):
         :param known_sol: List of known solutions for this problem. Useful for
         keeping trace of previously found solutions.
         :param pert_factor: The perturbations factor for perturbations impact.
+        :param kwargs: Optional extra values, not used here. Used them in
+        CoreProblemFactory subclasses.
         :return: An instance of a CoreProblem/CoreWithPerturbationsProblem.
         """
         CoreProblem._s_dim = dim

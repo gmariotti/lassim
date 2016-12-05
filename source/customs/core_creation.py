@@ -1,14 +1,14 @@
 import logging
-from typing import Dict, Callable, NamedTuple, List
+from typing import Dict, Callable, NamedTuple, List, Tuple
 
 import numpy as np
 from sortedcontainers import SortedDict
 
 from core.base_optimization import BaseOptimization
-from core.core_problem import CoreProblemFactory
 from core.factories import OptimizationFactory
 from core.lassim_context import OptimizationArgs, LassimContext
 from core.lassim_network import CoreSystem, LassimNetwork
+from core.problems.core_problem import CoreProblemFactory, CoreProblem
 from core.utilities.type_aliases import Vector, Float, Tuple4V
 from customs.core_functions import default_bounds, generate_reactions_vector, \
     iter_function
@@ -154,7 +154,8 @@ def data_parse_perturbations(files: Dict[str, str], network: LassimNetwork
 def optimization_setup(network: LassimNetwork,
                        problem_builder: CoreProblemFactory,
                        main_args: List[OptimizationArgs],
-                       sec_args: List[OptimizationArgs]) -> BaseOptimization:
+                       sec_args: List[OptimizationArgs]
+                       ) -> Tuple[BaseOptimization, CoreProblem]:
     """
     Setup of a BaseOptimization instance, constructing the problem using the
     input LassimNetwork, the CoreProblemFactory and the OptimizationArgs.
@@ -171,7 +172,7 @@ def optimization_setup(network: LassimNetwork,
     :param sec_args: The, optional, list of algorithms for a second optimization
     process. [!] not implemented yet.
     :return: The BaseOptimization class to use for building the instance that
-    will solve the problem.
+    will solve the problem and the instance of the starting problem to solve.
     """
     core = network.core
     reactions_ids = SortedDict(core.from_reactions_to_ids())
@@ -196,9 +197,8 @@ def optimization_setup(network: LassimNetwork,
         # )
     elif len(sec_args) == 0:
         opt_builder = OptimizationFactory.new_base_optimization(
-            main_opt.type, problem_builder, problem, reactions_ids,
-            iter_function
+            main_opt.type, iter_function
         )
     else:
         raise RuntimeError("How the hell did you get there?!")
-    return opt_builder
+    return opt_builder, problem
