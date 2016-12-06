@@ -228,7 +228,7 @@ class CoreProblemFactory(LassimProblemFactory):
 
         :param dim: Number of variables to optimize for the problem.
         :param bounds: Tuple with the list of lower bounds and upper bounds for
-        each problem variable. Both list must be of the same size of dim.
+        each problem variable. Both list must have size equal to dim.
         :param vector_map: Tuple containing two vectors needed for the cost
         evaluation. Their values and their representation are independent from
         the problem.

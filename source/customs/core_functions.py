@@ -1,31 +1,31 @@
 import logging
 from copy import deepcopy
-from typing import List
+from typing import List, Tuple, Optional
 
 import numpy as np
 from sortedcontainers import SortedDict
 
-from core.lassim_problem import LassimProblem
-from core.problems.core_problem import CoreProblemFactory
+from core.problems.core_problem import CoreProblemFactory, CoreProblem
 from core.solutions.lassim_solution import LassimSolution
-from core.utilities.type_aliases import Vector, Float
+from core.utilities.type_aliases import Vector, Float, Tuple2V
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.1.0"
+__version__ = "0.3.0"
 
 
 def default_bounds(num_tfacts: int, num_react: int
-                   ) -> (List[float], List[float]):
+                   ) -> Tuple[List[float], List[float]]:
     """
     Creates a tuple containing as first element the list of lower bounds, and as
     second element the list of upper bounds for the parameter to optimize.
     By default, for lambda/vmax the bounds are (0, 20), while for the k are
     (-20, 20)
-    :param num_tfacts: Number of transcription factors in the network
-    :param num_react: Number of reactions between the transcription factors
-    :return: Tuple contains lower bounds list and upper bounds list
+
+    :param num_tfacts: Number of transcription factors in the network.
+    :param num_react: Number of reactions between the transcription factors.
+    :return: Tuple contains lower bounds list and upper bounds list.
     """
     # FIXME - no smarter way to do this?
     lower_bounds = [0.0 for _ in range(0, num_tfacts * 2)]
@@ -36,16 +36,17 @@ def default_bounds(num_tfacts: int, num_react: int
 
 
 def generate_reactions_vector(reactions: SortedDict, dt_react=Float
-                              ) -> (Vector, Vector):
+                              ) -> Tuple2V:
     """
     From a reactions map, generates the corresponding numpy vector for
     reactions and its boolean mask. The reaction vector contains #tfacts**2
     elements, and each #tfacts subset represent the list of reactions with
     other transcription factors for one of them. The values are 0 if the
     reaction is not present and -1 if it is.
-    :param reactions: map of transcription factors and their reactions
-    :param dt_react: type of vector values
-    :return: numpy array for reactions and its corresponding boolean mask
+
+    :param reactions: Map of transcription factors and their reactions
+    :param dt_react: Type of vector values
+    :return: ndarray for reactions and its corresponding boolean mask
     """
     reacts = []
     num_tfacts = len(reactions.keys())
@@ -61,14 +62,15 @@ def generate_reactions_vector(reactions: SortedDict, dt_react=Float
 
 
 def remove_lowest_reaction(vres: Vector, reactions: SortedDict
-                           ) -> (Vector, SortedDict):
+                           ) -> Tuple[Vector, SortedDict]:
     """
     Searches in the optimization result vector vres, which reaction as the
     lowest |val| and removes it. From that index, removes the reaction also
-    from the reactions map
-    :param vres: result of the optimization
-    :param reactions: map of reactions by ids
-    :return: result without the lowest |val| and the new reactions map
+    from the reactions map.
+
+    :param vres: Result of the optimization.
+    :param reactions: Map of reactions by ids.
+    :return: Result without the lowest |val| and the new reactions map
     """
     tfacts_num = len(reactions.keys())
     k_values = vres[tfacts_num * 2:]
@@ -97,9 +99,23 @@ def remove_lowest_reaction(vres: Vector, reactions: SortedDict
     raise IndexError("Index {} to remove not found!!".format(min_index))
 
 
-# FIXME - move to a default file not related to the Core
 def iter_function(factory: CoreProblemFactory, solution: LassimSolution
-                  ) -> (LassimProblem, SortedDict, bool):
+                  ) -> Tuple[Optional[CoreProblem], Optional[SortedDict], bool]:
+    """
+    Custom function for performing an iteration after a completed optimization
+    for a certain number of variables in the core. This function generates a
+    new problem to solve, with one less variable, a new dictionary of the
+    reaction and a boolean value in case the optimization should continue or
+    not. The reaction removed from the old problem is the one with the lowest
+    value in absolute.
+
+    :param factory: Instance of CoreProblemFactory for building a new instance
+    of CoreProblem/CoreWithPerturbationsProblem.
+    :param solution: The current LassimSolution to use for building the new
+    problem.
+    :return: If a new iteration can be performed, it returns the new problem,
+    its reactions dictionary and True. Otherwise returns None, None and False.
+    """
     react_mask = solution.react_mask
     # checks how many true are still present in the reaction mask. If > 0, it
     # means that there's still at least a reaction

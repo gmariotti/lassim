@@ -40,6 +40,7 @@ class LassimProblem(base):
     def __copy__(self):
         self.__get_deepcopy__()
 
+
 class LassimProblemFactory:
     """
     Interface of a common factory for building LASSIM problems.
