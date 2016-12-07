@@ -66,10 +66,10 @@ class TestCoreFunctions(TestCase):
                            ))
 
     def test_GenerateReactionsVector(self):
-        exp_reactions = np.array([0, 0, -1, 0,
-                                  -1, 0, -1, -1,
-                                  -1, -1, -1, -1,
-                                  -1, 0, 0, 0], dtype=np.float32)
+        exp_reactions = np.array([0, 0, np.inf, 0,
+                                  np.inf, 0, np.inf, np.inf,
+                                  np.inf, np.inf, np.inf, np.inf,
+                                  np.inf, 0, 0, 0], dtype=np.float32)
         exp_mask = np.array([False, False, True, False,
                              True, False, True, True,
                              True, True, True, True,

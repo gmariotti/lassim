@@ -25,9 +25,8 @@ def default_bounds(num_tfacts: int, num_react: int
 
     :param num_tfacts: Number of transcription factors in the network.
     :param num_react: Number of reactions between the transcription factors.
-    :return: Tuple contains lower bounds list and upper bounds list.
+    :return: Tuple containing the lower bounds list and upper bounds list.
     """
-    # FIXME - no smarter way to do this?
     lower_bounds = [0.0 for _ in range(0, num_tfacts * 2)]
     upper_bounds = [20.0 for _ in range(0, num_tfacts * 2 + num_react)]
     for _ in range(0, num_react):
@@ -39,10 +38,10 @@ def generate_reactions_vector(reactions: SortedDict, dt_react=Float
                               ) -> Tuple2V:
     """
     From a reactions map, generates the corresponding numpy vector for
-    reactions and its boolean mask. The reaction vector contains #tfacts**2
+    reactions and its boolean mask. The reaction vector contains #tfacts^2
     elements, and each #tfacts subset represent the list of reactions with
     other transcription factors for one of them. The values are 0 if the
-    reaction is not present and -1 if it is.
+    reaction is not present and numpy.inf if it is.
 
     :param reactions: Map of transcription factors and their reactions
     :param dt_react: Type of vector values
@@ -51,14 +50,13 @@ def generate_reactions_vector(reactions: SortedDict, dt_react=Float
     reacts = []
     num_tfacts = len(reactions.keys())
     for tfact, reactions in reactions.items():
-        vector = np.zeros(num_tfacts)
-        vector[reactions] = -1
+        vector = np.zeros(num_tfacts, dtype=dt_react)
+        vector[reactions] = np.inf
         reacts.append(vector.tolist())
     reacts_flatten = [val for sublist in reacts for val in sublist]
     np_reacts = np.array(reacts_flatten, dtype=dt_react)
-    bool_mask = np_reacts < 0
 
-    return np_reacts, bool_mask
+    return np_reacts, np_reacts == np.inf
 
 
 def remove_lowest_reaction(vres: Vector, reactions: SortedDict
@@ -93,19 +91,19 @@ def remove_lowest_reaction(vres: Vector, reactions: SortedDict
             index = min_index - count + len(reactions[i])
             value = reactions[i].pop(index)
             logging.getLogger(__name__).info(
-                "Removed connection={} from reaction={}".format(value, i)
+                "Removed connection={} from tf={}".format(value, i)
             )
             return np.delete(vres, min_index + tfacts_num * 2), reactions
     raise IndexError("Index {} to remove not found!!".format(min_index))
 
 
 def iter_function(factory: CoreProblemFactory, solution: LassimSolution
-                  ) -> Tuple[Optional[CoreProblem], Optional[SortedDict], bool]:
+                  ) -> Tuple[Optional[CoreProblem], SortedDict, bool]:
     """
     Custom function for performing an iteration after a completed optimization
     for a certain number of variables in the core. This function generates a
     new problem to solve, with one less variable, a new dictionary of the
-    reaction and a boolean value in case the optimization should continue or
+    reactions and a boolean value in case the optimization should continue or
     not. The reaction removed from the old problem is the one with the lowest
     value in absolute.
 
@@ -114,7 +112,8 @@ def iter_function(factory: CoreProblemFactory, solution: LassimSolution
     :param solution: The current LassimSolution to use for building the new
     problem.
     :return: If a new iteration can be performed, it returns the new problem,
-    its reactions dictionary and True. Otherwise returns None, None and False.
+    its reactions dictionary and True. Otherwise returns None, an empty dict and
+    False.
     """
     react_mask = solution.react_mask
     # checks how many true are still present in the reaction mask. If > 0, it
@@ -133,4 +132,4 @@ def iter_function(factory: CoreProblemFactory, solution: LassimSolution
         )
         return new_problem, new_reactions, True
     else:
-        return None, None, False
+        return None, SortedDict(), False

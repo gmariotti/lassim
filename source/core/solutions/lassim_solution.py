@@ -16,7 +16,7 @@ __version__ = "0.1.0"
 
 class LassimSolution(BaseSolution):
     """
-    Represents the solution of an optimization cycle for the Lassim Problem.
+    Represents the solution of an optimization cycle for a Lassim Problem.
     """
 
     def __init__(self, champ: champion, react_ids: SortedDict,
