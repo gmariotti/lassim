@@ -1,10 +1,10 @@
-from typing import Callable, List
+from typing import Callable, List, Tuple, Optional
 
 from PyGMO import algorithm
+from sortedcontainers import SortedDict
 
 from core.base_optimization import BaseOptimization
-
-# from core.optimizations.multi_start_optimization import MultiStartOptimization
+from core.lassim_problem import LassimProblem
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
@@ -44,7 +44,9 @@ class OptimizationFactory:
 
     @classmethod
     def new_base_optimization(cls, o_type: str,
-                              iter_func: Callable[..., bool] = None
+                              iter_func: Callable[
+                                  ..., Tuple[Optional[LassimProblem],
+                                             SortedDict, bool]] = None
                               ) -> BaseOptimization:
         """
         Factory method for creation of a BaseOptimization object.

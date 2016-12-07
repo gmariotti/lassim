@@ -22,6 +22,19 @@ class LassimNetwork:
         """
         raise NotImplementedError(self.core.__name__)
 
+    def from_reactions_to_ids(self) -> Iterator[Tuple[int, SortedSet]]:
+        """
+        This method must be override when the Network interface is used.
+        Depending on the class implementing this interface, this method must
+        return a generator mapping a gene, a transcription factor, or something
+        else, to the corresponding set of reactions, interactions, ...
+
+        :return: An Iterator that returns always a (id, set(reactions_ids))
+        tuple.
+        """
+
+        raise NotImplementedError(self.from_reactions_to_ids.__name__)
+
 
 class CoreSystem(LassimNetwork):
     def __init__(self, net_dict: SortedDict, correction: bool = True):

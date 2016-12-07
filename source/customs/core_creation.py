@@ -13,7 +13,7 @@ from core.utilities.type_aliases import Vector, Float, Tuple4V
 from customs.core_functions import default_bounds, generate_reactions_vector, \
     iter_function
 from data_management.csv_format import parse_network, parse_time_sequence, \
-    parse_network_data, parse_perturbations_data
+    parse_patient_data, parse_core_perturbations_data
 
 """
 Set of custom functions for creation of the core and its optimization builder.
@@ -89,7 +89,7 @@ def data_parsing(files: Dict[str, str]) -> Tuple4V:
     starting values at t0.
     """
     time_seq = parse_time_sequence(files["time"])
-    data_list = [parse_network_data(data_file) for data_file in files["data"]]
+    data_list = [parse_patient_data(data_file) for data_file in files["data"]]
 
     np_data_list = [
         np.array([value for key, value in data.items()], dtype=Float)
@@ -126,7 +126,7 @@ def data_parse_perturbations(files: Dict[str, str], network: LassimNetwork
         # FIXME - perfect case for Optional.
         is_present = False
         pert_file = files["perturbations"]
-        pert_data = parse_perturbations_data(pert_file)
+        pert_data = parse_core_perturbations_data(pert_file)
         # checks data validity
         # checks if data shape is >= to (#tfacts, #tfacts)
         num_tfacts = core.num_tfacts

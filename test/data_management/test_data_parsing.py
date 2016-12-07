@@ -4,7 +4,7 @@ from unittest import TestCase
 import numpy as np
 from sortedcontainers import SortedDict, SortedSet
 
-from data_management.csv_format import parse_time_sequence, parse_network_data, \
+from data_management.csv_format import parse_time_sequence, parse_patient_data, \
     parse_network
 
 __author__ = "Guido Pio Mariotti"
@@ -74,7 +74,7 @@ class TestDataParsing(TestCase):
             "GATA3": np.array([0, 33, 99.9], dtype=np.float64),
             "NFKB1": np.array([1, 3, 89], dtype=np.float64)
         })
-        actual = parse_network_data(self.patient_filename)
+        actual = parse_patient_data(self.patient_filename)
         # can't use assertDictEqual because of numpy array
         self.assertSetEqual(set(expected.keys()), set(actual.keys()),
                             "Expected\n{}\nreceived\n{}".format(

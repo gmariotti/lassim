@@ -1,6 +1,6 @@
 import logging
 from inspect import signature
-from typing import Callable
+from typing import Callable, Tuple, Optional
 
 from PyGMO import topology, archipelago, island
 from sortedcontainers import SortedDict, SortedList
@@ -23,7 +23,9 @@ class BaseOptimization:
     the same optimization object but with different parameters.
     """
 
-    def __init__(self, algo, iter_func: Callable[..., bool]):
+    def __init__(self, algo,
+                 iter_func: Callable[..., Tuple[Optional[LassimProblem],
+                                                SortedDict, bool]]):
         self._algorithm = algo
         # can be None, remember it
         self._iterate = iter_func
