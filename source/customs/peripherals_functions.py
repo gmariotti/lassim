@@ -62,7 +62,8 @@ def remove_lowest_reaction(solution_vector: Vector, reactions: SortedDict
             logging.getLogger(__name__).info(
                 "Removed connection={} from gene={}".format(val_removed, key)
             )
-            return np.delete(solution_vector, min_index + 2 * num_genes), reactions
+            index_to_remove = min_index + 2 * num_genes
+            return np.delete(solution_vector, index_to_remove), reactions
         else:
             count += len(value)
     raise IndexError("Index {} to remove not found!!".format(min_index))
@@ -83,10 +84,10 @@ def generate_core_vector(core_data: Vector, num_tf: int, num_react_core: int,
     :return: Tuple containing a vector in the format:
         [lambda_1,..,lambda_#tf, lambda_g1, lambda_gm,
         vmax_1,..,vmax_#tf,vmax_g1,..,vmax_gn,
-        react_1,..,react_#creact, react_g1,..,react_#greact] and this boolean mask.
-        Each data related to the core is the one from the core_data, while the data
-        related to genes are all set to numpy.inf. The mask represents which data
-        are numpy.inf and which are not.
+        react_1,..,react_#creact, react_g1,..,react_#greact] and this boolean
+        mask. Each data related to the core is the one from the core_data, while
+        the data related to genes are all set to numpy.inf. The mask represents
+        which data are numpy.inf and which are not.
     """
     # is the same value for vmax
     num_genes = len(genes_reactions.keys())
