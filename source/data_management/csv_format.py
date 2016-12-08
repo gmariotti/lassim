@@ -92,7 +92,7 @@ def parse_time_sequence(filename: str, sep: str = "\t",
     ["t0", "t1", ..., "tn"].
 
     :param filename: Path to the file containing the time sequence on which the
-    data has been analyzed.
+        data has been analyzed.
     :param sep: Separator used in the file. Default is \t (tab).
     :param d_type: Type to use for numpy array.
     :return: Vector with the value starting from t0 to tn.
@@ -118,8 +118,8 @@ def parse_core_perturbations_data(filename: str, sep: str = "\t") -> Vector:
     :param filename: Path to the file containing the perturbations data.
     :param sep: Separator used in the file. Default is \t (tab).
     :return: 2D numpy.ndarray with #source * #source elements representing the
-    perturbation data for each source with the others. Each column represent
-    how each of its element changes when the column source is modified.
+        perturbation data for each source with the others. Each column represent
+        how each of its element changes when the column source is modified.
     """
 
     perturbations = pd.read_csv(filename, sep=sep)
@@ -149,16 +149,18 @@ def parse_core_data(filename: str, sep: str = "\t") -> pd.DataFrame:
 
     :param filename: Path to the file containing the data of a core system.
     :param sep: Separator used in the file. Default is \t (tab).
-    :return: pandas.DataFrame with same columns as the input file.
+    :return: pandas.DataFrame with same columns as the input file plus a'source'
+        column containing the corresponding transcription factor for each row.
     """
     core_data = pd.read_csv(filename, sep=sep, dtype=Float)
     columns = core_data.columns
-    first_headers = ["lambdas", "vmax"]
+    first_headers = {"lambda", "vmax"}
     logger = logging.getLogger(__name__)
-    if first_headers not in columns:
+    if not first_headers.issubset({*columns}):
         logger.error(
-            "Expected the following headers {}".format(first_headers)
-        )
+            "Expected the following headers {}, but received {}".format(
+                first_headers, {*columns}
+            ))
         raise AttributeError("Not valid core data headers, check log.")
 
     reactions = core_data.drop(first_headers, axis=1)

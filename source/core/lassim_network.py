@@ -18,7 +18,7 @@ class LassimNetwork:
         return the CoreSystem, or a subclass of it, representing that network.
 
         :return: The CoreSystem instance representing the network that
-        overrides this method.
+            overrides this method.
         """
         raise NotImplementedError(self.core.__name__)
 
@@ -30,7 +30,7 @@ class LassimNetwork:
         else, to the corresponding set of reactions, interactions, ...
 
         :return: An Iterator that returns always a (id, set(reactions_ids))
-        tuple.
+            tuple.
         """
 
         raise NotImplementedError(self.from_reactions_to_ids.__name__)
@@ -43,10 +43,10 @@ class CoreSystem(LassimNetwork):
         the transcription factor, in the form of a dictionary.
 
         :param net_dict: Dictionary with, for each transcription factor,
-        the set of transcription factors on which it has influence.
+            the set of transcription factors on which it has influence.
         :param correction: Decides if transcription factors with no reactions
-        must be "corrected" or not with a reaction with all the other
-        transcription factors plus itself.
+            must be "corrected" or not with a reaction with all the other
+            transcription factors plus itself.
         """
         self._network_dict = net_dict
         self.__tfacts = net_dict.keys()
@@ -60,7 +60,7 @@ class CoreSystem(LassimNetwork):
         Generates a CoreSystem using the dictionary of reactions given as input.
 
         :param reactions: A dictionary containing for each transcription factor
-        the set of genes from which is it influenced.
+            the set of genes from which is it influenced.
         :return: the corresponding CoreSystem
         """
         network = SortedDict()
@@ -81,8 +81,8 @@ class CoreSystem(LassimNetwork):
         factors that affect him.
 
         :param correction: Decides if transcription factors with no reactions
-        must be "corrected" or not with a reaction with all the other
-        transcription factors plus itself.
+            must be "corrected" or not with a reaction with all the other
+            transcription factors plus itself.
         :return: Reactions dictionary and number of reactions.
         """
         reactions_sorted = SortedDict()
@@ -133,7 +133,7 @@ class CoreSystem(LassimNetwork):
         Maps each reaction with its corresponding id.
 
         :return: An Iterator that returns always a (id, set(reactions_ids))
-        tuple.
+            tuple.
         """
         tfacts_ids = {key: value for key, value in self.from_tfacts_to_ids()}
         for tfact, reactions in self.reactions.viewitems():
@@ -146,9 +146,9 @@ class CoreSystem(LassimNetwork):
         Maps a dictionary of reactions from ids to string names.
 
         :param reactions: Dictionary of <int:set(int)> representing reactions as
-        integer numbers.
+            integer numbers.
         :return: The same dictionary as input with string names instead of
-        integer ids.
+            integer ids.
         """
         tfacts_ids = {key: value for key, value in self.from_ids_to_tfacts()}
         for key, value in reactions.viewitems():
@@ -203,11 +203,11 @@ class NetworkSystem(LassimNetwork):
         genes on which the CoreSystem has influence to.
 
         :param genes_net: A dictionary containing the name/id of the gene as a
-        key and the set of transcription factors that regulates it as value.
+            key and the set of transcription factors that regulates it as value.
         :param core: A CoreSystem instance containing the Core of this network.
         :param correction: To be used in case genes with no transcription
-        factors in their set should have a new set with all the transcription
-        factors in the core.
+            factors in their set should have a new set with all the transcription
+            factors in the core.
         """
         self._network = genes_net
         self._genes = genes_net.keys()
@@ -262,7 +262,7 @@ class NetworkSystem(LassimNetwork):
         Maps each reaction with its corresponding id.
 
         :return: An Iterator that returns always a (id, set(reactions_ids))
-        tuple.
+            tuple.
         """
         genes_ids = {key: value for key, value in self.from_genes_to_ids()}
         tfacts_dict = SortedDict(self.core.from_tfacts_to_ids())

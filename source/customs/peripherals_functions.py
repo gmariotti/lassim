@@ -24,7 +24,7 @@ def default_bounds(num_genes: int, num_react: int):
 
     :param num_genes: Number of genes in the network.
     :param num_react: Number of reactions between genes and transcription
-    factors core.
+        factors core.
     :return: Tuple containing the lower bounds list and upper bounds list.
     """
     lower_bounds = [0.0 for _ in range(0, num_genes * 2)]
@@ -42,11 +42,11 @@ def remove_lowest_reaction(solution_vector: Vector, reactions: SortedDict
     removed.
 
     :param solution_vector: The numpy.ndarray representing an optimization
-    solution.
+        solution.
     :param reactions: A dictionary containing the set of reactions for each
-    gene.
+        gene.
     :return: Tuple containing the solution_vector and the reactions dictionary
-    without the reaction removed.
+        without the reaction removed.
     """
     num_genes = len(reactions.keys())
     absolute_k = np.absolute(solution_vector[num_genes * 2:])
@@ -74,20 +74,19 @@ def generate_core_vector(core_data: Vector, num_tf: int, num_react_core: int,
     Used for generating a core vector needed in NetworkProblem instances.
 
     :param core_data: Represents the data for the core system. It must be a 2D
-    matrix, with each row representing the data for a transcription factor.
-    Each row must be in the format:
-    [lambda, vmax, k1,...,kn]
+        matrix, with each row representing the data for a transcription factor.
+        Each row must be in the format: [lambda, vmax, k1,...,kn]
     :param num_tf: Number of transcription factors in the core.
     :param num_react_core: Number of reactions inside the core.
     :param genes_reactions: Dictionary containing the reactions between the
-    genes and the core.
+        genes and the core.
     :return: Tuple containing a vector in the format:
-    [lambda_1,..,lambda_#tf, lambda_g1, lambda_gm,
-    vmax_1,..,vmax_#tf,vmax_g1,..,vmax_gn,
-    react_1,..,react_#creact, react_g1,..,react_#greact] and this boolean mask.
-    Each data related to the core is the one from the core_data, while the data
-    related to genes are all set to numpy.inf. The mask represents which data
-    are numpy.inf and which are not.
+        [lambda_1,..,lambda_#tf, lambda_g1, lambda_gm,
+        vmax_1,..,vmax_#tf,vmax_g1,..,vmax_gn,
+        react_1,..,react_#creact, react_g1,..,react_#greact] and this boolean mask.
+        Each data related to the core is the one from the core_data, while the data
+        related to genes are all set to numpy.inf. The mask represents which data
+        are numpy.inf and which are not.
     """
     # is the same value for vmax
     num_genes = len(genes_reactions.keys())
@@ -128,9 +127,8 @@ def generate_reactions_vector(genes_reactions: SortedDict, core_data: Vector,
 
     :param genes_reactions: Reactions map for the genes in respect to the core.
     :param core_data: Represents the data for the core system. It must be a 2D
-    matrix, with each row representing the data for a transcription factor.
-    Each row must be in the format:
-    [lambda, vmax, k1,...,kn]
+        matrix, with each row representing the data for a transcription factor.
+        Each row must be in the format: [lambda, vmax, k1,...,kn]
     :param dt_react: The type of numpy array you want to build.
     :return: Tuple containing the reaction vector and its corresponding mask.
     """
@@ -161,13 +159,13 @@ def iter_function(core_data: Vector, num_tf: int, num_core_react: int
     one with the lowest absolute value.
 
     :param core_data: Represents the data for the core system. It must be a 2D
-    matrix, with each row representing the data for a transcription factor.
-    Each row must be in the format:
-    [lambda, vmax, k1,...,kn]
+        matrix, with each row representing the data for a transcription factor.
+        Each row must be in the format:
+        [lambda, vmax, k1,...,kn]
     :param num_tf: Number of transcription factors in the core.
     :param num_core_react: Number of reactions in the core.
     :return: Iteration function that accept as input a NetworkProblemFactory and
-    the LassimSolution to evaluate.
+        the LassimSolution to evaluate.
     """
 
     def wrapper(factory: NetworkProblemFactory, solution: LassimSolution

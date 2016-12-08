@@ -2,15 +2,18 @@ import os
 from unittest import TestCase
 
 import numpy as np
+import pandas as pd
+from nose.tools import assert_list_equal
+from numpy.testing import assert_array_equal
 from sortedcontainers import SortedDict, SortedSet
 
 from data_management.csv_format import parse_time_sequence, parse_patient_data, \
-    parse_network
+    parse_network, parse_core_data
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.1.0"
+__version__ = "0.3.0"
 
 network_data = """source\ttarget
 KLF6\tNFKB1
@@ -27,7 +30,7 @@ time_sequence_file_data = """t0\tt1\tt2\tt3
 0\t1\t2\t3"""
 
 
-class TestDataParsing(TestCase):
+class TestCSVFormat(TestCase):
     @classmethod
     def setUpClass(cls):
         # initialize network data file
@@ -45,6 +48,8 @@ class TestDataParsing(TestCase):
         with open(cls.time_sequence_filename, "w") as timeseq:
             timeseq.write(time_sequence_file_data)
 
+        cls.core_data_filename = "test-core_data.csv"
+
     @classmethod
     def tearDownClass(cls):
         if os.path.isfile(cls.network_filename):
@@ -55,6 +60,9 @@ class TestDataParsing(TestCase):
 
         if os.path.isfile(cls.time_sequence_filename):
             os.remove(cls.time_sequence_filename)
+
+        if os.path.isfile(cls.core_data_filename):
+            os.remove(cls.core_data_filename)
 
     def test_ParseNetwork(self):
         expected = SortedDict({
@@ -91,3 +99,27 @@ class TestDataParsing(TestCase):
         actual = parse_time_sequence(self.time_sequence_filename)
         self.assertTrue(np.array_equal(expected, actual),
                         "Expected\n{}\nreceived\n{}".format(expected, actual))
+
+    def test_ParseCoreData(self):
+        values = np.reshape(np.arange(15), (3, 5))
+        dframe = pd.DataFrame(
+            values, columns=["lambda", "vmax", "tf1", "tf2", "tf3"],
+            dtype=np.float64
+        )
+        dframe.to_csv(self.core_data_filename, sep="\t", index=False)
+        expected_values = np.array([
+            [0.0, 1.0, 2.0, 3.0, 4.0],
+            [5.0, 6.0, 7.0, 8.0, 9.0],
+            [10.0, 11.0, 12.0, 13.0, 14.0]
+        ], dtype=np.float64)
+        expected_columns = ["lambda", "vmax", "tf1", "tf2", "tf3"]
+
+        actual_dframe = parse_core_data(self.core_data_filename)
+        assert_array_equal(expected_values, actual_dframe.values,
+                           "Expected\n{}\nbut actual\n{}".format(
+                               expected_values, actual_dframe.values
+                           ))
+        assert_list_equal(expected_columns, [*actual_dframe.columns],
+                          "Expected\n{}\nbut actual\n{}".format(
+                              expected_columns, actual_dframe.columns
+                          ))

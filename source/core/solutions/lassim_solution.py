@@ -29,6 +29,7 @@ class LassimSolution(BaseSolution):
         Get a numpy matrix representing the solution. Each row of the matrix
         represents a transcription factor, while the columns are divided as
         lambda - vmax - react1 - ... - reactn
+
         :return: A numpy matrix representing the solution.
         """
         num_tfacts = len(self.reactions_ids.keys())

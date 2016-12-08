@@ -133,7 +133,7 @@ class OptimizationArgs:
         Used to log the optimization arguments inserted by the user.
         :param logger: the logging object to use
         :param is_pert: if the presence of the perturbations factor has to be
-        logged or not.
+            logged or not.
         """
         logger.info("Algorithm used is {}".format(self.__type))
         logger.info("Number of cores is {}".format(self.__islands))

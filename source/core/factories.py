@@ -50,10 +50,11 @@ class OptimizationFactory:
                               ) -> BaseOptimization:
         """
         Factory method for creation of a BaseOptimization object.
+
         :param o_type: The label of an valid optimization algorithm.
         :param iter_func: An optional iteration function to run after each
-        completed optimization. Use it in order to dynamically change the
-        problem to solve and its reactions.
+            completed optimization. Use it in order to dynamically change the
+            problem to solve and its reactions.
         :return: An instance of BaseOptimization.
         """
         # raises KeyError if not present

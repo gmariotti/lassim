@@ -37,7 +37,8 @@ class BaseSolution:
         Get a pandas.DataFrame representation of the solution. Must be
         implemented based on the kind of problem this solution wants to
         represent.
-        :param: The list of headers for the pandas.DataFrame
+
+        :param: The list of headers for the pandas.DataFrame.
         :return: A pandas.DataFrame representing the solution.
         """
         raise NotImplementedError(self.get_solution_matrix.__name__)

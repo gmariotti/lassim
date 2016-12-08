@@ -48,13 +48,13 @@ def problem_setup(files: Dict[str, str], context: LassimContext,
     It setups the core problem factory for constructing core problems.
 
     :param files: List of files path containing the data. Must be a dictionary
-    with the following keys: data, time and, optionally, perturbations.
+        with the following keys: data, time and, optionally, perturbations.
     :param context: a LassimContext instance.
     :param data_class: A callable object that returns a namedtuple as output.
-    The data that takes as input must be the data, sigma, times, perturbations
-    and y0, all of them np.ndarray.
+        The data that takes as input must be the data, sigma, times,
+        perturbations and y0, all of them np.ndarray.
     :return: A tuple with the namedtuple containing the data and an instance
-    of the problem factory.
+        of the problem factory.
     """
     data, sigma, times, y0 = data_parsing(files)
     is_pert_prob, perturbations = data_parse_perturbations(
@@ -86,7 +86,7 @@ def data_parsing(files: Dict[str, str]) -> Tuple4V:
 
     :param files: Dictionary with the file names containing the data.
     :return: Vector for mean of data, standard deviation, time series and
-    starting values at t0.
+        starting values at t0.
     """
     time_seq = parse_time_sequence(files["time"])
     data_list = [parse_patient_data(data_file) for data_file in files["data"]]
@@ -116,10 +116,10 @@ def data_parse_perturbations(files: Dict[str, str], network: LassimNetwork
     expected in the core of the network.
 
     :param files: dictionary with, or without, a reference to a "perturbations"
-    file.
+        file.
     :param network: The LassimNetwork object containing the CoreSystem.
     :return: True and parsed data if they are present and valid, False and empty
-    vector if not.
+        vector if not.
     """
     core = network.core
     try:
@@ -164,15 +164,15 @@ def optimization_setup(network: LassimNetwork,
     custom.core_functions.generate_reactions_vector.
 
     :param network: An instance of LassimNetwork containing the current
-    CoreSystem to optimize.
+        CoreSystem to optimize.
     :param problem_builder: A CoreProblemFactory for building the corresponding
-    problem to solve.
+        problem to solve.
     :param main_args: The list of optimization algorithms for the main
-    optimization.
+        optimization.
     :param sec_args: The, optional, list of algorithms for a second optimization
-    process. [!] not implemented yet.
+        process. [!] not implemented yet.
     :return: The BaseOptimization class to use for building the instance that
-    will solve the problem and the instance of the starting problem to solve.
+        will solve the problem and its starting problem to solve.
     """
     core = network.core
     reactions_ids = SortedDict(core.from_reactions_to_ids())
