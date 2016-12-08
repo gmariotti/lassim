@@ -34,7 +34,7 @@ How to install and use the toolbox
 Before using the the toolbox, be sure to satisfy all the requirements in the [Development environment and requirements](#development-environment-and-requirements). After you have done that, run the following command from a terminal:
 ```
 git clone https://github.com/gmariotti/lassim.git
-cd lassim/source/core
+cd lassim
 ./scripts/install.sh
 ```
 
