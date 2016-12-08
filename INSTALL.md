@@ -3,12 +3,14 @@ INSTALLATION GUIDE
 
 How to use the toolbox
 ----------------------
-Before running the LASSIM toolbox is necessary to have completed the steps [Boost installation](#boost-installation), 
-[GSL installation](#gsl-installation), [PyGMO installation](#pygmo-installation). Use the files in the `examples` folder for testing it or as an 
-example on how to format your data.
+Before running the LASSIM toolbox is necessary to have completed the steps [Boost installation](#boost-installation)
+and [PyGMO installation](#pygmo-installation), while [GSL installation](#gsl-installation) is optional for now. 
+Use the files in the `examples` folder for testing the toolbox or as an example on how to format your data.
 
-**[!]** Sometimes is possible that Boost and/or GSL are already installed in your system. Try to build 
+**[!]** Sometimes it is possible that Boost and/or GSL are already installed in your system. Try to build 
 PyGMO against them, but if any error occurs, start considering the possibility of a local installation.
+
+**[!]** All the installation processes assume clang as the default compiler, but it is not mandatory.
 
 Boost installation
 ------------------
@@ -101,8 +103,10 @@ export LD_LIBRARY_PATH="path/to/install/pagmo/lib:$LD_LIBRARY_PATH"
 
 Known Issues
 ------------
-- Before installing PyGMO on Ubuntu based distributions, is necessary to modify **line 397** of `pagmo/CMakeLists.txt` with the following one:
+- **[FIXED]** Before installing PyGMO on Ubuntu based distributions, is necessary to modify **line 397** of 
+`pagmo/CMakeLists.txt` with the following one:  
 `TARGET_LINK_LIBRARIES(main pagmo_static ${MANDATORY_LIBRARIES})`
+
 - Seems like that versions of [SciPy > 1.17.1](http://www.scipy.org/) are missing **libstdc++.so** or have a version of it
 different from **GLIBCXX_3.4.21**. If you're using [Anaconda](https://anaconda.org/), version [4.1.1](https://repo.continuum.io/archive/index.html) is the best one to
 install, at least for now.
