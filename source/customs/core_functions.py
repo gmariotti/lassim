@@ -14,6 +14,12 @@ __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
 __version__ = "0.3.0"
 
+"""
+Set of custom functions for the handling the optimization problem of a core.
+Can be considered an example on how to integrate source/core in an existing
+pipeline.
+"""
+
 
 def default_bounds(num_tfacts: int, num_react: int
                    ) -> Tuple[List[float], List[float]]:

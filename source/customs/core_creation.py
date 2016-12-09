@@ -16,7 +16,7 @@ from data_management.csv_format import parse_network, parse_time_sequence, \
     parse_patient_data, parse_core_perturbations_data
 
 """
-Set of custom functions for creation of the core and its optimization builder.
+Set of custom functions for core creation and general setup of the problem.
 Can be considered an example of possible integration of the source/core module
 in an already existing pipeline.
 """

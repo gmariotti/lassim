@@ -14,6 +14,10 @@ __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
 __version__ = "0.3.0"
 
+"""
+Set of custom functions for peripherals problem creation and iteration.
+"""
+
 
 def default_bounds(num_genes: int, num_react: int):
     """
