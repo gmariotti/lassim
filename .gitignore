@@ -1,6 +1,6 @@
 # PyCharm stuff
-.idea/
 *.iml
+workspace.xml
 
 # Python and C stuff
 *.pyc
