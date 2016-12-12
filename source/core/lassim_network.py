@@ -20,7 +20,32 @@ class LassimNetwork:
         :return: The CoreSystem instance representing the network that
             overrides this method.
         """
+
         raise NotImplementedError(self.core.__name__)
+
+    @property
+    def reactions(self) -> SortedDict:
+        """
+        This method must be override when the Network interface is used.
+        Depending on the class implementing this interface, this method must
+        return the SortedDict for this network containing the reactions.
+
+        :return: The dictionary of reactions for this network.
+        """
+
+        raise NotImplementedError(self.reactions.__name__)
+
+    @property
+    def react_count(self) -> int:
+        """
+        This method must be override when the Network interface is used.
+        Depending on the class implementing this interface, this method must
+        return the number of reactions in this network.
+
+        :return: The number of reactions in the network.
+        """
+
+        raise NotImplementedError(self.react_count.__name__)
 
     def from_reactions_to_ids(self) -> Iterator[Tuple[int, SortedSet]]:
         """
@@ -48,6 +73,7 @@ class CoreSystem(LassimNetwork):
             must be "corrected" or not with a reaction with all the other
             transcription factors plus itself.
         """
+
         self._network_dict = net_dict
         self.__tfacts = net_dict.keys()
         self.__reactions, self.__react_count = self.__reactions_from_network(
@@ -63,6 +89,7 @@ class CoreSystem(LassimNetwork):
             the set of genes from which is it influenced.
         :return: the corresponding CoreSystem
         """
+
         network = SortedDict()
         for react_tfact, influenced_set in reactions.viewitems():
             network.setdefault(react_tfact, default=SortedSet())
@@ -85,6 +112,7 @@ class CoreSystem(LassimNetwork):
             transcription factors plus itself.
         :return: Reactions dictionary and number of reactions.
         """
+
         reactions_sorted = SortedDict()
         reactions_count = 0
         for tfact, reactions in self._network_dict.items():
@@ -125,6 +153,7 @@ class CoreSystem(LassimNetwork):
 
         :return: An Iterator that returns always a (id, tfact) tuple.
         """
+
         for tfact, ident in self.from_tfacts_to_ids():
             yield ident, tfact
 
@@ -135,6 +164,7 @@ class CoreSystem(LassimNetwork):
         :return: An Iterator that returns always a (id, set(reactions_ids))
             tuple.
         """
+
         tfacts_ids = {key: value for key, value in self.from_tfacts_to_ids()}
         for tfact, reactions in self.reactions.viewitems():
             reactions_ids = SortedSet([tfacts_ids[tf] for tf in reactions])
@@ -150,6 +180,7 @@ class CoreSystem(LassimNetwork):
         :return: The same dictionary as input with string names instead of
             integer ids.
         """
+
         tfacts_ids = {key: value for key, value in self.from_ids_to_tfacts()}
         for key, value in reactions.viewitems():
             try:
@@ -209,6 +240,7 @@ class NetworkSystem(LassimNetwork):
             factors in their set should have a new set with all the transcription
             factors in the core.
         """
+
         self._network = genes_net
         self._genes = genes_net.keys()
         self._core = core
@@ -241,6 +273,7 @@ class NetworkSystem(LassimNetwork):
 
         :return: An Iterator that returns always a (gene, id) tuple.
         """
+
         core = self.core
         num_tfacts = len(core.tfacts)
         num_genes = len(self.genes)
@@ -254,6 +287,7 @@ class NetworkSystem(LassimNetwork):
 
         :return: An Iterator that returns always a (id, gene) tuple.
         """
+
         for gene, ident in self.from_genes_to_ids():
             yield ident, gene
 
@@ -264,6 +298,7 @@ class NetworkSystem(LassimNetwork):
         :return: An Iterator that returns always a (id, set(reactions_ids))
             tuple.
         """
+
         genes_ids = {key: value for key, value in self.from_genes_to_ids()}
         tfacts_dict = SortedDict(self.core.from_tfacts_to_ids())
         for gene, reactions in self.reactions.viewitems():

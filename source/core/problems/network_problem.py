@@ -17,6 +17,7 @@ class NetworkProblem(LassimProblem):
     class and avoid exceptions during execution.
     [!] NOT THREAD SAFE
     """
+
     _s_dim = 0
     _s_bounds = ([], [])
     _s_cost_data = (np.empty(1), np.empty(1), np.empty(1))
@@ -35,6 +36,7 @@ class NetworkProblem(LassimProblem):
             to not help for speeding the optimization process, used them as a
             comparison with the optimization results.
         """
+
         super(NetworkProblem, self).__init__(NetworkProblem._s_dim)
 
         # for numpy exp overflow
@@ -89,6 +91,7 @@ class NetworkProblem(LassimProblem):
         :return: A tuple of a single value, containing the cost for this value
             of x.
         """
+
         # the solution vector represent the variables for the core equations,
         # that are fixed at creation time, plus the variables for the peripheral
         # that varies between _objfun_impl calls.
@@ -120,7 +123,8 @@ class NetworkProblem(LassimProblem):
 
 class NetworkProblemFactory(LassimProblemFactory):
     """
-
+    Factory class for NetworkProblem/NetworkWithPerturbationsProblem.
+    Not really useful considering that the problem variables are global one.
     """
 
     def __init__(self, cost_data: Tuple[Vector, ...], y0: Vector,
@@ -166,13 +170,14 @@ class NetworkProblemFactory(LassimProblemFactory):
         :param pert_factor: The perturbations factor for perturbations impact.
         :return: An instance of a NetworkProblemFactory.
         """
+
         factory = NetworkProblemFactory(
             cost_data, y0, ode_function, pert_function, pert_factor
         )
         return factory
 
     def build(self, dim: int, bounds: Tuple[List[float], List[float]],
-              vector_map: Tuple[Vector, ...], known_sol: List[Vector],
+              vector_map: Tuple[Vector, ...], known_sol: List[Vector] = None,
               **kwargs) -> NetworkProblem:
         """
         Construct a NetworkProblem/NetworkWithPerturbationsProblem with the
@@ -191,6 +196,7 @@ class NetworkProblemFactory(LassimProblemFactory):
             the first one.
         :return: An instance of NetworkProblem/NetworkWithPerturbationsProblem.
         """
+
         NetworkProblem._s_dim = dim
         NetworkProblem._s_bounds = bounds
         NetworkProblem._s_map_tuple = vector_map

@@ -34,6 +34,7 @@ cpdef double perturbation_func_sequential(np.ndarray[double, ndim=2] pert_data,
     :param ode: Function for performing the ode
     :return: Value of the impact of the perturbations over the "normal" system
     """
+
     cdef:
         int i
         unsigned int t_size, sim_size = size * size

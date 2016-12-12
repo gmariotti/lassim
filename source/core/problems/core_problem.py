@@ -21,6 +21,7 @@ class CoreProblem(LassimProblem):
     class and avoid exceptions during execution.
     [!] NOT THREAD SAFE
     """
+
     _s_dim = 0
     _s_bounds = ([], [])
     _s_cost_data = (np.empty(1), np.empty(1), np.empty(1))
@@ -38,6 +39,7 @@ class CoreProblem(LassimProblem):
             to not help for speeding the optimization process, use them as a
             comparison with the optimization results.
         """
+
         # dim is the number of variables to optim ize
         super(CoreProblem, self).__init__(CoreProblem._s_dim)
 
@@ -87,6 +89,7 @@ class CoreProblem(LassimProblem):
         :return: A tuple of a single value, containing the cost for this value
             of x.
         """
+
         solution_vector = np.fromiter(x, dtype=Float)
         results = CoreProblem._s_ode_function(
             self._y0, self._time, solution_vector,
@@ -119,6 +122,7 @@ class CoreWithPerturbationsProblem(CoreProblem):
     class and avoid exceptions during execution.
     [!] NOT THREAD SAFE
     """
+
     _s_pert_function = None
     _s_pert_data = np.empty(1)
     _s_pert_factor = 0
@@ -133,6 +137,7 @@ class CoreWithPerturbationsProblem(CoreProblem):
             to not help for speeding the optimization process, use them as a
             comparison with the optimization results.
         """
+
         # the perturbation data should be already formatted for the perturbation
         # function in order to make the problem as general as possible
         self._pdata = CoreWithPerturbationsProblem._s_pert_data
@@ -151,6 +156,7 @@ class CoreWithPerturbationsProblem(CoreProblem):
             of x plus the influence of the perturbations data times the
             perturbation cost.
         """
+
         # cost and pert_cost are assumed independent from each other but running
         # them asynchronously with a pool is slower than doing that sequentially
         cost = super(CoreWithPerturbationsProblem, self)._objfun_impl(x)[0]
@@ -220,6 +226,7 @@ class CoreProblemFactory(LassimProblemFactory):
         :param pert_factor: The perturbations factor for perturbations impact.
         :return: An instance of a CoreProblemFactory.
         """
+
         factory = CoreProblemFactory(
             cost_data, y0, ode_function, pert_function, pert_factor
         )
@@ -244,6 +251,7 @@ class CoreProblemFactory(LassimProblemFactory):
             CoreProblemFactory subclasses.
         :return: An instance of a CoreProblem/CoreWithPerturbationsProblem.
         """
+
         CoreProblem._s_dim = dim
         CoreProblem._s_bounds = bounds
         CoreProblem._s_map_tuple = vector_map

@@ -46,6 +46,7 @@ class PlotSerializer:
         each plot file.
         :return: A PlotSerializer instance.
         """
+
         if not os.path.isdir(output_dir):
             os.makedirs(output_dir)
         if len(axis) != len(names):
@@ -63,6 +64,7 @@ class PlotSerializer:
         :param directory: Optional value in case plots have to be saved in
         another directory.
         """
+
         outdir = self._directory
         if directory is not None and os.path.isdir(directory):
             os.makedirs(directory)

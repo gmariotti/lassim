@@ -64,6 +64,7 @@ class BaseOptimization:
         :param kwargs: Use kwargs for extra value in extension class.
         :return: the BaseOptimization instance built from the parameter context.
         """
+
         new_instance = self.__class__(self._algorithm, self._iterate)
         new_instance._context = context
         new_instance._prob_factory = prob_factory
@@ -99,6 +100,7 @@ class BaseOptimization:
             parameters.
         :return: A dictionary with just the valid parameters for the algorithm.
         """
+
         valid_params = signature(self._algorithm.__init__).parameters
         input_params = opt_args.params
         output_params = {name: input_params[name]
@@ -116,6 +118,7 @@ class BaseOptimization:
         :param kwargs: Extra parameters, to be used for method override.
         :return: A SortedList of BaseSolution for this optimization problem.
         """
+
         solutions = SortedList()
 
         try:
@@ -165,6 +168,7 @@ class BaseOptimization:
         :param topol: The topology of the archipelago.
         :return: The best solution found from the solving of the prob instance.
         """
+
         archi = self._generate_archipelago(prob, topol)
         archi.evolve(self._n_evolutions)
         archi.join()
@@ -181,6 +185,7 @@ class BaseOptimization:
         :param topol: The wanted topology for the archipelago.
         :return: The archipelago for solving the LassimProblem.
         """
+
         archi = archipelago(
             self._algorithm, prob, self._n_islands - 1, self._n_individuals,
             topology=topol
@@ -209,6 +214,7 @@ class BaseOptimization:
         :param prob: The LassimProblem that has been solved by archi.
         :param reactions: The map of reactions specific for this solution.
         """
+
         champions = [isl.population.champion for isl in archi]
         solutions = SortedList(
             [self._context.SolutionClass(champ, reactions, prob)

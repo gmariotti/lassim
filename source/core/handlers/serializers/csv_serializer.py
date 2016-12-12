@@ -37,6 +37,7 @@ class CSVSerializer:
         file.
         :return: An instance of CSVSerializer.
         """
+
         if not os.path.isdir(output_dir):
             os.makedirs(output_dir)
         if len(headers) == 0:
@@ -57,6 +58,7 @@ class CSVSerializer:
         :param solutions: List of BaseSolution objects
         :param filename: Optional filename.
         """
+
         if filename is None:
             filename = self._filename_creator(
                 self._num, solutions[0].number_of_variables

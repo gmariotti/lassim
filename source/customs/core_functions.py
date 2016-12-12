@@ -33,6 +33,7 @@ def default_bounds(num_tfacts: int, num_react: int
     :param num_react: Number of reactions between the transcription factors.
     :return: Tuple containing the lower bounds list and upper bounds list.
     """
+
     lower_bounds = [0.0 for _ in range(0, num_tfacts * 2)]
     upper_bounds = [20.0 for _ in range(0, num_tfacts * 2 + num_react)]
     for _ in range(0, num_react):
@@ -53,6 +54,7 @@ def generate_reactions_vector(reactions: SortedDict, dt_react=Float
     :param dt_react: Type of vector values
     :return: ndarray for reactions and its corresponding boolean mask
     """
+
     reacts = []
     num_tfacts = len(reactions.keys())
     for tfact, reactions in reactions.items():
@@ -76,6 +78,7 @@ def remove_lowest_reaction(vres: Vector, reactions: SortedDict
     :param reactions: Map of reactions by ids.
     :return: Result without the lowest |val| and the new reactions map
     """
+
     tfacts_num = len(reactions.keys())
     k_values = vres[tfacts_num * 2:]
     abs_k = np.absolute(k_values)
@@ -121,6 +124,7 @@ def iter_function(factory: CoreProblemFactory, solution: LassimSolution
         its reactions dictionary and True. Otherwise returns None, an empty dict and
         False.
     """
+
     react_mask = solution.react_mask
     # checks how many true are still present in the reaction mask. If > 0, it
     # means that there's still at least a reaction

@@ -31,6 +31,7 @@ def default_bounds(num_genes: int, num_react: int):
         factors core.
     :return: Tuple containing the lower bounds list and upper bounds list.
     """
+
     lower_bounds = [0.0 for _ in range(0, num_genes * 2)]
     upper_bounds = [20.0 for _ in range(0, num_genes * 2 + num_react)]
     for _ in range(0, num_react):
@@ -52,6 +53,7 @@ def remove_lowest_reaction(solution_vector: Vector, reactions: SortedDict
     :return: Tuple containing the solution_vector and the reactions dictionary
         without the reaction removed.
     """
+
     num_genes = len(reactions.keys())
     absolute_k = np.absolute(solution_vector[num_genes * 2:])
     min_index = np.argmin(absolute_k)
@@ -93,6 +95,7 @@ def generate_core_vector(core_data: Vector, num_tf: int, num_react_core: int,
         the data related to genes are all set to numpy.inf. The mask represents
         which data are numpy.inf and which are not.
     """
+
     # is the same value for vmax
     num_genes = len(genes_reactions.keys())
     tot_lambdas = num_tf + num_genes
@@ -137,6 +140,7 @@ def generate_reactions_vector(genes_reactions: SortedDict, core_data: Vector,
     :param dt_react: The type of numpy array you want to build.
     :return: Tuple containing the reaction vector and its corresponding mask.
     """
+
     reacts = []
     # number of rows is the number of transcription factors
     num_tf = core_data.shape[0]

@@ -9,7 +9,7 @@ from core.factories import OptimizationFactory
 from core.lassim_context import OptimizationArgs, LassimContext
 from core.lassim_network import CoreSystem, LassimNetwork
 from core.problems.core_problem import CoreProblemFactory, CoreProblem
-from core.utilities.type_aliases import Vector, Float, Tuple4V
+from core.utilities.type_aliases import Vector, Float, Tuple4V, CoreData
 from customs.core_functions import default_bounds, generate_reactions_vector, \
     iter_function
 from data_management.csv_format import parse_network, parse_time_sequence, \
@@ -35,6 +35,7 @@ def create_core(network_file: str) -> CoreSystem:
     :param network_file: Path of the file containing the network.
     :return: An instance of the CoreProblem.
     """
+
     tf_network = parse_network(network_file)
     core = CoreSystem(tf_network)
     logging.getLogger(__name__).info("\n" + str(core))
@@ -42,20 +43,17 @@ def create_core(network_file: str) -> CoreSystem:
 
 
 def problem_setup(files: Dict[str, str], context: LassimContext,
-                  data_class: Callable[..., NamedTuple]
-                  ) -> (NamedTuple, CoreProblemFactory):
+                  ) -> Tuple[CoreData, CoreProblemFactory]:
     """
     It setups the core problem factory for constructing core problems.
 
     :param files: List of files path containing the data. Must be a dictionary
         with the following keys: data, time and, optionally, perturbations.
     :param context: a LassimContext instance.
-    :param data_class: A callable object that returns a namedtuple as output.
-        The data that takes as input must be the data, sigma, times,
-        perturbations and y0, all of them np.ndarray.
     :return: A tuple with the namedtuple containing the data and an instance
         of the problem factory.
     """
+
     data, sigma, times, y0 = data_parsing(files)
     is_pert_prob, perturbations = data_parse_perturbations(
         files, context.network
@@ -77,7 +75,7 @@ def problem_setup(files: Dict[str, str], context: LassimContext,
         logging.getLogger(__name__).info(
             "Created builder for problem without perturbations."
         )
-    return data_class(data, sigma, times, perturbations, y0), problem_builder
+    return CoreData(data, sigma, times, perturbations, y0), problem_builder
 
 
 def data_parsing(files: Dict[str, str]) -> Tuple4V:
@@ -88,6 +86,7 @@ def data_parsing(files: Dict[str, str]) -> Tuple4V:
     :return: Vector for mean of data, standard deviation, time series and
         starting values at t0.
     """
+
     time_seq = parse_time_sequence(files["time"])
     data_list = [parse_patient_data(data_file) for data_file in files["data"]]
 
@@ -121,6 +120,7 @@ def data_parse_perturbations(files: Dict[str, str], network: LassimNetwork
     :return: True and parsed data if they are present and valid, False and empty
         vector if not.
     """
+
     core = network.core
     try:
         # FIXME - perfect case for Optional.
@@ -174,6 +174,7 @@ def optimization_setup(network: LassimNetwork,
     :return: The BaseOptimization class to use for building the instance that
         will solve the problem and its starting problem to solve.
     """
+
     core = network.core
     reactions_ids = SortedDict(core.from_reactions_to_ids())
 

@@ -32,6 +32,7 @@ class LassimSolution(BaseSolution):
 
         :return: A numpy matrix representing the solution.
         """
+
         num_tfacts = len(self.reactions_ids.keys())
         lambdas = np.transpose([self._solution[:num_tfacts]])
         vmax = np.transpose([self._solution[num_tfacts: 2 * num_tfacts]])

@@ -135,6 +135,7 @@ class OptimizationArgs:
         :param is_pert: if the presence of the perturbations factor has to be
             logged or not.
         """
+
         logger.info("Algorithm used is {}".format(self.__type))
         logger.info("Number of cores is {}".format(self.__islands))
         logger.info("Number of evolutions for archipelago is {}".format(

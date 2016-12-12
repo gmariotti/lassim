@@ -26,11 +26,11 @@ messages = {
     # MANDATORY
     "input-network": "The file path of the transcription factors network.",
     "input-data": "The files path of the data to analyze. Expected at least "
-                  "two files",
+                  "two files.",
     "time-series": "The file path of the time series in which the data where "
                    "collected.",
-    "input-core": "The file path of the data related to an existing core",
-    "number-of-cpus": "The number of CPUs available for use. Default is {}",
+    "input-core": "The file path of the data related to an existing core.",
+    "number-of-cpus": "The number of CPUs available for use. Default is {}.",
 
     # OPTIONAL
     # OPTIMIZATION
@@ -126,14 +126,21 @@ def set_peripherals_files_args(parser: ArgumentParser):
                        help=messages["input-data"])
     group.add_argument("inputT", metavar="time-series",
                        help=messages["time-series"])
-    group.add_argument("CPUs", metavar="num", type=int,
+    group.add_argument("CPUs", metavar="cores", type=int,
                        help=messages["number-of-cpus"].format(
                            default["cores"]
                        ))
 
 
-def get_peripherals_files_args(parser: ArgumentParser):
-    pass
+def get_peripherals_files_args(args):
+    # CPU argument
+    cores = args.CPus
+    if cores < 0:
+        cores = default["cores"]
+
+    return {
+        "num_cores": cores
+    }
 
 
 def set_main_optimization_args(parser: ArgumentParser):

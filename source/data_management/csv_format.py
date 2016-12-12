@@ -22,6 +22,7 @@ def parse_network(filename: str, sep: str = "\t") -> SortedDict:
     :param sep: Separator used in the file. Default is \t (tab).
     :return: A SortedDict with each pair as <tf:set(tf/genes)>
     """
+
     # expected headers in a network file
     h_source = "source"
     h_target = "target"
@@ -97,6 +98,7 @@ def parse_time_sequence(filename: str, sep: str = "\t",
     :param d_type: Type to use for numpy array.
     :return: Vector with the value starting from t0 to tn.
     """
+
     times = pd.read_csv(filename, sep=sep)
     # check validity of headers
     num_columns = len(times.columns)
@@ -152,6 +154,7 @@ def parse_core_data(filename: str, sep: str = "\t") -> pd.DataFrame:
     :return: pandas.DataFrame with same columns as the input file plus a'source'
         column containing the corresponding transcription factor for each row.
     """
+
     core_data = pd.read_csv(filename, sep=sep, dtype=Float)
     columns = core_data.columns
     first_headers = {"lambda", "vmax"}

@@ -18,6 +18,7 @@ class OptimizationFactory:
     Not part of the BaseOptimization class with the purpose of avoiding any
     circular import, that seems to work/not working for no reason at all.
     """
+
     # algorithms for solving Continuous Unconstrained Single problems
     _labels_cus = {
         # Heuristic
@@ -57,6 +58,7 @@ class OptimizationFactory:
             problem to solve and its reactions.
         :return: An instance of BaseOptimization.
         """
+
         # raises KeyError if not present
         algo = cls._labels_cus[o_type]
         return BaseOptimization(algo, iter_func)

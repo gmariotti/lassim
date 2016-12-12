@@ -1,6 +1,5 @@
 import logging
 from argparse import ArgumentParser
-from collections import namedtuple
 from typing import Callable, NamedTuple, Iterable, Tuple, List, Dict
 
 import numpy as np
@@ -18,16 +17,15 @@ from core.utilities.type_aliases import Tuple3V
 from customs.core_creation import create_core, problem_setup, \
     optimization_setup
 from utilities.logger_setup import LoggerSetup
-from utilities.terminal import set_core_files_args, set_main_optimization_args, \
-    set_logger_args, \
-    set_output_args, \
+from utilities.terminal import set_core_files_args, \
+    set_main_optimization_args, set_logger_args, set_output_args, \
     get_logger_args, get_core_files_args, get_output_args, \
     get_main_optimization_args
 
 """
-This script and the functions used in it are how the toolbox works.
-Use this script as an inspiration to integrate the core module into your
-pipeline.
+Main script for handling the core problem in the Lassim Toolbox.
+Can also be used as an example on how the toolbox works and how the core module
+can be integrated into an existing pipeline.
 """
 
 __author__ = "Guido Pio Mariotti"
@@ -91,18 +89,14 @@ def lassim_core():
     # arguments from terminal are parsed
     files, output, main_args, sec_args = lassim_core_terminal(script_name)
     core = create_core(files["network"])
-    # create a context for solving this problem
+    # creates a context for solving this problem
     context = LassimContext(
         core, main_args, odeint1e8_lassim, perturbation_func_sequential,
         LassimSolution, sec_args
     )
-    # get a namedtuple with the data parsed and the factory for the problem
+    # returns a namedtuple with the data parsed and the factory for the problem
     # construction
-    # TODO - consider adding it to the context
-    DataTuple = namedtuple(
-        "DataTuple", ["data", "sigma", "times", "perturb", "y0"]
-    )
-    data, p_factory = problem_setup(files, context, DataTuple)
+    data, p_factory = problem_setup(files, context)
     base_builder, start_problem = optimization_setup(
         context.network, p_factory, context.primary_opts, context.secondary_opts
     )

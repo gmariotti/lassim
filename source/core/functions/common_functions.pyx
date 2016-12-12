@@ -77,6 +77,7 @@ cpdef np.ndarray[double, ndim=2] odeint1e8_lassim(np.ndarray[double] y0,
     :return: The values after integration of this system. The return values are
     the same of scipy.integrate.odeint
     """
+
     cdef:
         np.ndarray[double] lambdas, vmax, k_values
         np.ndarray[double] ones = np.ones(size)
@@ -159,6 +160,7 @@ cpdef np.ndarray[double, ndim=2] odeint1e8_lassim_matrix(
     :return: The values after integration of this system. The return values are
     the same of scipy.integrate.odeint
     """
+
     cdef:
         np.ndarray[double, ndim=2] lambdas, vmax
         np.ndarray[double] k_values
@@ -192,6 +194,7 @@ def odeint1e9_lassim(y0, t, sol_vector, k_map, k_map_mask, size, result):
     :return: The values after integration of this system. The return values are
     the same of scipy.integrate.odeint
     """
+
     ones = np.ones(size)
 
     lambdas = sol_vector[:size]
