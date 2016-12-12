@@ -3,7 +3,12 @@ from typing import List, Tuple, Callable
 import numpy as np
 
 from core.lassim_problem import LassimProblem, LassimProblemFactory
-from core.utilities.type_aliases import Vector, Float, Tuple2V
+from core.utilities.type_aliases import Vector, Float
+
+__author__ = "Guido Pio Mariotti"
+__copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
+__license__ = "GNU General Public License v3.0"
+__version__ = "0.3.0"
 
 
 class NetworkProblem(LassimProblem):
@@ -121,6 +126,68 @@ class NetworkProblem(LassimProblem):
         return self.__get_deepcopy__()
 
 
+class NetworkWithPerturbationsProblem(NetworkProblem):
+    """
+    This class is a representation of the optimization problem for solving a
+    network problem, with a fixed, immutable core and mutable peripherals but
+    with also perturbations data available.
+    It is completely independent on how the equations system is designed and
+    solved.
+    For compatibility purposes, the _s_ variables must be set before the
+    creation of the problem. This is needed for extending a PyGMO.problem.base
+    class and avoid exceptions during execution.
+    [!] NOT THREAD SAFE
+    """
+
+    _s_pert_function = None
+    _s_pert_core = np.empty(1)
+    _s_pert_data = np.empty(1)
+    _s_pert_factor = 0
+
+    def __init__(self, dim: int = 1, known_sol: List[Vector] = None):
+        """
+        Constructor of NetworkWithPerturbationsProblem.
+
+        :param dim: not used, present just for avoiding PyGMO crashes. Use
+            instead _s_dim for the problem dimension.
+        :param known_sol: List of known solutions previously found. They seems
+            to not help for speeding the optimization process, used them as a
+            comparison with the optimization results.
+        """
+
+        self._pcore = NetworkWithPerturbationsProblem._s_pert_core
+        self._pdata = NetworkWithPerturbationsProblem._s_pert_data
+        self._factor = NetworkWithPerturbationsProblem._s_pert_factor
+        super(NetworkWithPerturbationsProblem, self).__init__(
+            NetworkProblem._s_dim, known_sol
+        )
+
+    def _objfun_impl(self, x):
+        """
+        Calculates the objective function for this problem with x as decision
+        vector.
+
+        :param x: Tuple containing the value of each parameter to optimize.
+        :return: A tuple of a single value, containing the cost for this value
+            of x.
+        """
+
+        cost = super(NetworkWithPerturbationsProblem, self)._objfun_impl(x)[0]
+        core_data = self._core_data.copy(order='F')
+        core_data[self._core_mask] = np.fromiter(x, dtype=Float)
+        sol_vector = np.asfortranarray(core_data)
+        pert_cost = NetworkWithPerturbationsProblem._s_pert_function(
+            self._pdata, self._size, self._y0, sol_vector,
+            self._pcore, self.vector_map, self.vector_map_mask,
+            NetworkProblem._s_ode_function
+        )
+
+        return (self._factor * pert_cost + cost,)
+
+    def __get_deepcopy__(self):
+        return NetworkWithPerturbationsProblem(dim=self.dimension)
+
+
 class NetworkProblemFactory(LassimProblemFactory):
     """
     Factory class for NetworkProblem/NetworkWithPerturbationsProblem.
@@ -137,14 +204,16 @@ class NetworkProblemFactory(LassimProblemFactory):
                  pert_factor: float):
         NetworkProblem._s_ode_function = ode_function
         # divides data considering presence or not of perturbations data
-        if len(cost_data) == 4:
-            # TODO NetworkWithPerturbationsProblem
+        if len(cost_data) == 5:
+            NetworkWithPerturbationsProblem._s_pert_core = cost_data[3]
+            NetworkWithPerturbationsProblem._s_pert_data = cost_data[4]
             cost_data = (cost_data[0], cost_data[1], cost_data[2])
         NetworkProblem._s_cost_data = cost_data
         NetworkProblem._s_y0 = y0
         self.__is_pert = False
         if pert_function is not None:
-            # TODO NetworkWithPerturbationsProblem
+            NetworkWithPerturbationsProblem._s_pert_function = pert_function
+            NetworkWithPerturbationsProblem._s_pert_factor = pert_factor
             self.__is_pert = True
 
     @classmethod
@@ -162,8 +231,10 @@ class NetworkProblemFactory(LassimProblemFactory):
 
         :param cost_data: A tuple containing the data for the cost evaluation
             of the problem. The first three elements must be the peripheral
-            data, the sigma and the time sequence. An optional forth value means
-            the presence of perturbations data.
+            data, the sigma and the time sequence. An optional forth and fifth
+            values means the presence of perturbations data. Forth value is
+            the perturbations of the core, fifth value is the perturbation of
+            the peripheral gene.
         :param y0: Starting values for ODE evaluation.
         :param ode_function: Function for performing the ODE evaluation.
         :param pert_function: Function for evaluate the perturbations impact.

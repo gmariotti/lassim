@@ -24,5 +24,6 @@ CoreData = NamedTuple("CoreData",
                       [("data", Vector), ("sigma", Vector), ("times", Vector),
                        ("perturb", Vector), ("y0", Vector)])
 PeripheralsData = NamedTuple("PeripheralsData",
-                             [("core_data", CoreData), ("num_genes", int),
-                              ("num_react", int), ("reactions", SortedDict)])
+                             [("core_data", CoreData), ("pert_gene", Vector),
+                              ("num_genes", int), ("num_react", int),
+                              ("reactions", SortedDict)])

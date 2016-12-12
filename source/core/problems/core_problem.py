@@ -162,9 +162,8 @@ class CoreWithPerturbationsProblem(CoreProblem):
         cost = super(CoreWithPerturbationsProblem, self)._objfun_impl(x)[0]
         sol_vector = np.asfortranarray(np.fromiter(x, dtype=Float))
         pert_cost = CoreWithPerturbationsProblem._s_pert_function(
-            self._pdata, self._size, self._s_y0,
-            sol_vector, self.vector_map, self.vector_map_mask,
-            CoreProblem._s_ode_function
+            self._pdata, self._size, self._y0, sol_vector,
+            self.vector_map, self.vector_map_mask, CoreProblem._s_ode_function
         )
 
         # tested on ipython - float factor seems faster than a np.ndarray of one
