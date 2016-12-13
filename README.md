@@ -50,7 +50,7 @@ Development environment and requirements
 ----------------------------------------
 The current environment on which the toolbox is developed and tested is:
 
-- [Linux Mint 18 Cinnamon](https://linuxmint.com/)
+- [Fedora 25 Workstation](https://getfedora.org/)
 - [PyCharm 2016.x](https://www.jetbrains.com/pycharm/)
 - [Anaconda 4.1.1](https://anaconda.org/) with Python 3.5.2
 - [Boost 1.61.0](http://www.boost.org)
@@ -87,6 +87,15 @@ in different ways.
 - A Gitter channel.
 
 [Here](https://python3statement.github.io/) you can find one of the reasons why the support for Python 2.7 is highly improbable.
+
+Current Branches
+----------------
+
+The `master` branch, usually, contains working code, tested on different environments. Check `releases` to see the 
+latest stable version of the toolbox.
+
+The `development` branch, instead, contains unstable, untested code, with future features and bug fixes, should not 
+be used unless you want to help with the development. 
 
 References
 ----------

@@ -3,12 +3,35 @@ INSTALLATION GUIDE
 
 How to use the toolbox
 ----------------------
-Before running the LASSIM toolbox is necessary to have completed the steps [Boost installation](#boost-installation), 
-[GSL installation](#gsl-installation), [PyGMO installation](#pygmo-installation). Use the files in the `examples` folder for testing it or as an 
-example on how to format your data.
+Before running the LASSIM toolbox is necessary to have completed the steps [Boost installation](#boost-installation)
+and [PyGMO installation](#pygmo-installation), while [GSL installation](#gsl-installation) is optional for now. 
+Use the files in the `examples` folder for testing the toolbox or as an example on how to format your data.
 
-**[!]** Sometimes is possible that Boost and/or GSL are already installed in your system. Try to build 
+**[!]** Sometimes it is possible that Boost and/or GSL are already installed in your system. Try to build 
 PyGMO against them, but if any error occurs, start considering the possibility of a local installation.
+
+**[!]** All the installation processes assume clang as the default compiler, but it is not mandatory.
+
+Anaconda installation
+---------------------
+For making the installation as simple as possible, [Anaconda](https://anaconda.org/) offers an environment with almost all the packages
+required for using the toolbox, so is suggested as Python installation. 
+
+Download [Anaconda3-4.1.1-Linux-x86_64.sh](https://repo.continuum.io/archive/index.html) and run the following commands:
+```
+bash Anaconda3-4.1.1-Linux-x86_64.sh
+conda create -n <env-name> --clone root
+source activate <env-name>
+pip install sortedcontainers
+```
+Now, for [Boost installation](#boost-installation) and [PyGMO installation](#pygmo-installation) remember to run always `source activate <env-name>` or 
+directly add the directory to the system path.
+
+Also, you'll need to add the following environment variable, usually by adding them to the `.bashrc` file
+```
+# CUSTOM - anaconda3-4.1.1
+export CPLUS_INCLUDE_PATH="path/to/anaconda/include/python3.5m/:$CPLUS_INCLUDE_PATH"
+```
 
 Boost installation
 ------------------
@@ -92,17 +115,18 @@ python -c "from PyGMO import test; test.run_full_test_suite()"
 ```
 Make sure to pass all the test after the call to `make test` and `python -c ...`
 
-Then, add the following environment variables, usually by adding them to the `.bashrc` file
+Then, add the following environment variable, usually by adding them to the `.bashrc` file
 ```
 # CUSTOM - PyGMO
-export CPLUS_INCLUDE_PATH="path/to/python/include/python<version>/:$CPLUS_INCLUDE_PATH"
 export LD_LIBRARY_PATH="path/to/install/pagmo/lib:$LD_LIBRARY_PATH"
 ```
 
 Known Issues
 ------------
-- Before installing PyGMO on Ubuntu based distributions, is necessary to modify **line 397** of `pagmo/CMakeLists.txt` with the following one:
+- **[FIXED]** Before installing PyGMO on Ubuntu based distributions, is necessary to modify **line 397** of 
+`pagmo/CMakeLists.txt` with the following one:  
 `TARGET_LINK_LIBRARIES(main pagmo_static ${MANDATORY_LIBRARIES})`
+
 - Seems like that versions of [SciPy > 1.17.1](http://www.scipy.org/) are missing **libstdc++.so** or have a version of it
 different from **GLIBCXX_3.4.21**. If you're using [Anaconda](https://anaconda.org/), version [4.1.1](https://repo.continuum.io/archive/index.html) is the best one to
 install, at least for now.
