@@ -2,12 +2,13 @@ import json
 import logging
 import os
 from argparse import ArgumentParser
-from typing import Dict, Tuple, List
+from typing import Tuple, List
 
 import psutil
 
 from core.factories import OptimizationFactory
 from core.lassim_context import OptimizationArgs
+from core.utilities.type_aliases import CoreFiles
 from utilities.logger_setup import LoggerSetup
 
 """
@@ -80,7 +81,7 @@ def set_core_files_args(parser: ArgumentParser):
                        help=messages["time-series"])
 
 
-def get_core_files_args(args) -> Tuple[Dict[str, str], bool]:
+def get_core_files_args(args) -> Tuple[CoreFiles, bool]:
     logger = logging.getLogger(__name__)
     if not os.path.isfile(args.inputN):
         logger.error("File {} doesn't exist".format(args.inputN))
@@ -96,11 +97,6 @@ def get_core_files_args(args) -> Tuple[Dict[str, str], bool]:
         logger.error("File {} doesn't exist".format(args.inputT))
         exit(0)
 
-    files = {
-        "network": args.inputN,
-        "data": args.inputD,
-        "time": args.inputT,
-    }
     pert_file = getattr(args, "perturbations")
     if pert_file is not None and not os.path.isfile(pert_file):
         logger.error("File {} doesn't exist.".format(pert_file))
@@ -112,10 +108,9 @@ def get_core_files_args(args) -> Tuple[Dict[str, str], bool]:
     is_pert = False
     if pert_file is not None:
         logger.info("Perturbations file is {}".format(pert_file))
-        files["perturbations"] = pert_file
         is_pert = True
 
-    return files, is_pert
+    return CoreFiles(args.inputN, args.inputD, args.inputT, pert_file), is_pert
 
 
 def set_peripherals_files_args(parser: ArgumentParser):

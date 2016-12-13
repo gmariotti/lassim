@@ -13,7 +13,7 @@ from core.handlers.csv_handlers import SimpleCSVSolutionsHandler
 from core.handlers.plot_handler import PlotBestSolutionsHandler
 from core.lassim_context import LassimContext, OptimizationArgs
 from core.solutions.lassim_solution import LassimSolution
-from core.utilities.type_aliases import Tuple3V
+from core.utilities.type_aliases import Tuple3V, CoreFiles
 from customs.core_creation import create_core, problem_setup, \
     optimization_setup
 from utilities.logger_setup import LoggerSetup
@@ -35,7 +35,7 @@ __version__ = "0.3.0"
 
 
 def lassim_core_terminal(script_name: str
-                         ) -> Tuple[Dict[str, str], Tuple[str, int],
+                         ) -> Tuple[CoreFiles, Tuple[str, int],
                                     List[OptimizationArgs],
                                     List[OptimizationArgs]]:
     parser = ArgumentParser(script_name)
@@ -88,7 +88,7 @@ def lassim_core():
 
     # arguments from terminal are parsed
     files, output, main_args, sec_args = lassim_core_terminal(script_name)
-    core = create_core(files["network"])
+    core = create_core(files.network)
     # creates a context for solving this problem
     context = LassimContext(
         core, main_args, odeint1e8_lassim, perturbation_func_sequential,

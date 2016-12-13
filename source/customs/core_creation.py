@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Callable, NamedTuple, List, Tuple
+from typing import List, Tuple
 
 import numpy as np
 from sortedcontainers import SortedDict
@@ -9,7 +9,8 @@ from core.factories import OptimizationFactory
 from core.lassim_context import OptimizationArgs, LassimContext
 from core.lassim_network import CoreSystem, LassimNetwork
 from core.problems.core_problem import CoreProblemFactory, CoreProblem
-from core.utilities.type_aliases import Vector, Float, Tuple4V, CoreData
+from core.utilities.type_aliases import Vector, Float, Tuple4V, CoreData, \
+    CoreFiles
 from customs.core_functions import default_bounds, generate_reactions_vector, \
     iter_function
 from data_management.csv_format import parse_network, parse_time_sequence, \
@@ -42,13 +43,13 @@ def create_core(network_file: str) -> CoreSystem:
     return core
 
 
-def problem_setup(files: Dict[str, str], context: LassimContext,
+def problem_setup(files: CoreFiles, context: LassimContext,
                   ) -> Tuple[CoreData, CoreProblemFactory]:
     """
     It setups the core problem factory for constructing core problems.
 
-    :param files: List of files path containing the data. Must be a dictionary
-        with the following keys: data, time and, optionally, perturbations.
+    :param files: Instance of CoreFiles with path to files for core
+        optimization.
     :param context: a LassimContext instance.
     :return: A tuple with the namedtuple containing the data and an instance
         of the problem factory.
@@ -78,17 +79,17 @@ def problem_setup(files: Dict[str, str], context: LassimContext,
     return CoreData(data, sigma, times, perturbations, y0), problem_builder
 
 
-def data_parsing(files: Dict[str, str]) -> Tuple4V:
+def data_parsing(files: CoreFiles) -> Tuple4V:
     """
     Generate the set of data used in the optimization from the file name.
 
-    :param files: Dictionary with the file names containing the data.
+    :param files: CoreFiles instance with the path to the core files.
     :return: Vector for mean of data, standard deviation, time series and
         starting values at t0.
     """
 
-    time_seq = parse_time_sequence(files["time"])
-    data_list = [parse_patient_data(data_file) for data_file in files["data"]]
+    time_seq = parse_time_sequence(files.times)
+    data_list = [parse_patient_data(data_file) for data_file in files.data]
 
     np_data_list = [
         np.array([value for key, value in data.items()], dtype=Float)
@@ -107,26 +108,24 @@ def data_parsing(files: Dict[str, str]) -> Tuple4V:
     return data_mean_n.T, std_dev.mean(axis=0), time_seq, data_mean.T[0].copy()
 
 
-def data_parse_perturbations(files: Dict[str, str], network: LassimNetwork
+def data_parse_perturbations(files: CoreFiles, network: LassimNetwork
                              ) -> (bool, Vector):
     """
     Parse the data for perturbations if they are present. If they are presents,
     checks that their size corresponds to the number of transcription factors
     expected in the core of the network.
 
-    :param files: dictionary with, or without, a reference to a "perturbations"
-        file.
+    :param files: CoreFiles instance containing the perturbations file path.
     :param network: The LassimNetwork object containing the CoreSystem.
     :return: True and parsed data if they are present and valid, False and empty
         vector if not.
     """
 
     core = network.core
-    try:
-        # FIXME - perfect case for Optional.
+    # FIXME - perfect case for Optional.
+    if files.perturbations is not None:
         is_present = False
-        pert_file = files["perturbations"]
-        pert_data = parse_core_perturbations_data(pert_file)
+        pert_data = parse_core_perturbations_data(files.perturbations)
         # checks data validity
         # checks if data shape is >= to (#tfacts, #tfacts)
         num_tfacts = core.num_tfacts
@@ -142,12 +141,7 @@ def data_parse_perturbations(files: Dict[str, str], network: LassimNetwork
             pert_data = np.empty(0)
 
         return is_present, pert_data
-    except KeyError:
-        return False, np.empty(0)
-    except OSError:
-        logging.getLogger(__name__).error("File {} doesn't exist.".format(
-            files["perturbations"]
-        ))
+    else:
         return False, np.empty(0)
 
 

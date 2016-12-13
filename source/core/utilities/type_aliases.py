@@ -1,4 +1,4 @@
-from typing import Tuple, NamedTuple
+from typing import Tuple, NamedTuple, List
 
 import numpy as np
 from sortedcontainers import SortedDict
@@ -20,6 +20,9 @@ Tuple3V = Tuple[Vector, Vector, Vector]  # Tuple3[T] = Tuple[T, T, T]
 Tuple4V = Tuple[Vector, Vector, Vector, Vector]
 
 # data types
+CoreFiles = NamedTuple("Files",
+                       [("network", str), ("data", List[str]), ("times", str),
+                        ("perturbations", str)])
 CoreData = NamedTuple("CoreData",
                       [("data", Vector), ("sigma", Vector), ("times", Vector),
                        ("perturb", Vector), ("y0", Vector)])
