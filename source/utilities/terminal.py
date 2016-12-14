@@ -8,7 +8,7 @@ import psutil
 
 from core.factories import OptimizationFactory
 from core.lassim_context import OptimizationArgs
-from core.utilities.type_aliases import CoreFiles
+from utilities.data_classes import InputFiles, OutputData, InputExtra
 from utilities.logger_setup import LoggerSetup
 
 """
@@ -81,7 +81,7 @@ def set_core_files_args(parser: ArgumentParser):
                        help=messages["time-series"])
 
 
-def get_core_files_args(args) -> Tuple[CoreFiles, bool]:
+def get_core_files_args(args) -> Tuple[InputFiles, bool]:
     logger = logging.getLogger(__name__)
     if not os.path.isfile(args.inputN):
         logger.error("File {} doesn't exist".format(args.inputN))
@@ -110,7 +110,7 @@ def get_core_files_args(args) -> Tuple[CoreFiles, bool]:
         logger.info("Perturbations file is {}".format(pert_file))
         is_pert = True
 
-    return CoreFiles(args.inputN, args.inputD, args.inputT, pert_file), is_pert
+    return InputFiles(args.inputN, args.inputD, args.inputT, pert_file), is_pert
 
 
 def set_peripherals_files_args(parser: ArgumentParser):
@@ -127,15 +127,13 @@ def set_peripherals_files_args(parser: ArgumentParser):
                        ))
 
 
-def get_peripherals_files_args(args):
+def get_peripherals_files_args(args) -> Tuple[InputFiles, InputExtra, bool]:
     # CPU argument
     cores = args.CPus
     if cores < 0:
         cores = default["cores"]
 
-    return {
-        "num_cores": cores
-    }
+    return InputFiles(...), InputExtra(..., cores), False
 
 
 def set_main_optimization_args(parser: ArgumentParser):
@@ -287,7 +285,7 @@ def set_output_args(parser: ArgumentParser):
                        help=messages["number-of-solutions"])
 
 
-def get_output_args(args) -> Tuple[str, int]:
+def get_output_args(args) -> OutputData:
     logger = logging.getLogger(__name__)
     directory = getattr(args, "directory")
     if not os.path.isdir(directory):
@@ -300,4 +298,4 @@ def get_output_args(args) -> Tuple[str, int]:
     logger.info("Number of solutions saved for each iteration is {}".format(
         num_solutions
     ))
-    return directory, num_solutions
+    return OutputData(directory, num_solutions)

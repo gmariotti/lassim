@@ -13,7 +13,8 @@ from core.handlers.csv_handlers import SimpleCSVSolutionsHandler
 from core.handlers.plot_handler import PlotBestSolutionsHandler
 from core.lassim_context import LassimContext, OptimizationArgs
 from core.solutions.lassim_solution import LassimSolution
-from core.utilities.type_aliases import Tuple3V, CoreFiles
+from core.utilities.type_aliases import Tuple3V
+from utilities.data_classes import InputFiles, OutputData
 from customs.core_creation import create_core, problem_setup, \
     optimization_setup
 from utilities.logger_setup import LoggerSetup
@@ -35,7 +36,7 @@ __version__ = "0.3.0"
 
 
 def lassim_core_terminal(script_name: str
-                         ) -> Tuple[CoreFiles, Tuple[str, int],
+                         ) -> Tuple[InputFiles, OutputData,
                                     List[OptimizationArgs],
                                     List[OptimizationArgs]]:
     parser = ArgumentParser(script_name)
@@ -107,10 +108,12 @@ def lassim_core():
     # list of headers that will be used in each solution
     tfacts = [tfact for tfact in core.tfacts]
     headers = ["lambda", "vmax"] + tfacts
-    csv_handler = SimpleCSVSolutionsHandler(output[0], output[1], headers)
+    csv_handler = SimpleCSVSolutionsHandler(
+        output.directory, output.num_solutions, headers
+    )
     axis = [("time", "[{}]".format(name)) for name in tfacts]
     plot_handler = PlotBestSolutionsHandler(
-        output[0], tfacts, axis, data_producer(context, data)
+        output.directory, tfacts, axis, data_producer(context, data)
     )
     handler = CompositeSolutionsHandler([csv_handler, plot_handler])
     # building of the optimization based on the parameters passed as arguments
@@ -121,7 +124,9 @@ def lassim_core():
     )
     # list of solutions from solving the problem
     solutions = optimization.solve(topol=topology.ring())
-    final_handler = SimpleCSVSolutionsHandler(output[0], float("inf"), headers)
+    final_handler = SimpleCSVSolutionsHandler(
+        output.directory, float("inf"), headers
+    )
     final_handler.handle_solutions(solutions, "best_solutions.csv")
 
 

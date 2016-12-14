@@ -9,12 +9,12 @@ from core.factories import OptimizationFactory
 from core.lassim_context import OptimizationArgs, LassimContext
 from core.lassim_network import CoreSystem, LassimNetwork
 from core.problems.core_problem import CoreProblemFactory, CoreProblem
-from core.utilities.type_aliases import Vector, Float, Tuple4V, CoreData, \
-    CoreFiles
+from core.utilities.type_aliases import Vector, Float, Tuple4V
 from customs.core_functions import default_bounds, generate_reactions_vector, \
     iter_function
 from data_management.csv_format import parse_network, parse_time_sequence, \
-    parse_patient_data, parse_core_perturbations_data
+    parse_patient_data, parse_perturbations_data
+from utilities.data_classes import CoreData, InputFiles
 
 """
 Set of custom functions for core creation and general setup of the problem.
@@ -43,7 +43,7 @@ def create_core(network_file: str) -> CoreSystem:
     return core
 
 
-def problem_setup(files: CoreFiles, context: LassimContext,
+def problem_setup(files: InputFiles, context: LassimContext,
                   ) -> Tuple[CoreData, CoreProblemFactory]:
     """
     It setups the core problem factory for constructing core problems.
@@ -79,7 +79,7 @@ def problem_setup(files: CoreFiles, context: LassimContext,
     return CoreData(data, sigma, times, perturbations, y0), problem_builder
 
 
-def data_parsing(files: CoreFiles) -> Tuple4V:
+def data_parsing(files: InputFiles) -> Tuple4V:
     """
     Generate the set of data used in the optimization from the file name.
 
@@ -89,26 +89,23 @@ def data_parsing(files: CoreFiles) -> Tuple4V:
     """
 
     time_seq = parse_time_sequence(files.times)
-    data_list = [parse_patient_data(data_file) for data_file in files.data]
+    data_list = [parse_patient_data(data_file).values
+                 for data_file in files.data]
 
-    np_data_list = [
-        np.array([value for key, value in data.items()], dtype=Float)
-        for data in data_list
-        ]
-    data_maxes = [np.amax(data, axis=1) for data in np_data_list]
+    data_maxes = [np.amax(data, axis=1) for data in data_list]
     maxes = np.array(data_maxes, dtype=Float)
     real_maxes = np.amax(maxes, axis=0)
-    np_data_norm = [(data.T / real_maxes).T for data in np_data_list]
+    np_data_norm = [(data.T / real_maxes).T for data in data_list]
     data_mean_n = np.array(np_data_norm, dtype=Float).mean(axis=0)
     # unbiased, divisor is N - 1
     std_dev = np.std(np.array(np_data_norm, dtype=Float), axis=2)
 
-    data_mean = np.array(np_data_list, dtype=Float).mean(axis=0)
+    data_mean = np.array(data_list, dtype=Float).mean(axis=0)
 
     return data_mean_n.T, std_dev.mean(axis=0), time_seq, data_mean.T[0].copy()
 
 
-def data_parse_perturbations(files: CoreFiles, network: LassimNetwork
+def data_parse_perturbations(files: InputFiles, network: LassimNetwork
                              ) -> (bool, Vector):
     """
     Parse the data for perturbations if they are present. If they are presents,
@@ -125,7 +122,7 @@ def data_parse_perturbations(files: CoreFiles, network: LassimNetwork
     # FIXME - perfect case for Optional.
     if files.perturbations is not None:
         is_present = False
-        pert_data = parse_core_perturbations_data(files.perturbations)
+        pert_data = parse_perturbations_data(files.perturbations).values
         # checks data validity
         # checks if data shape is >= to (#tfacts, #tfacts)
         num_tfacts = core.num_tfacts

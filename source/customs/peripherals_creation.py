@@ -1,16 +1,21 @@
-from typing import Tuple
-
 import logging
+from typing import Tuple, Iterable, List
+
+import numpy as np
 import pandas as pd
 from sortedcontainers import SortedDict, SortedSet
 
 from core.lassim_context import LassimContext
 from core.lassim_network import NetworkSystem, CoreSystem
 from core.problems.network_problem import NetworkProblemFactory, NetworkProblem
-from core.utilities.type_aliases import PeripheralsData
+from core.utilities.type_aliases import Vector, Tuple2V, Float
 from customs.peripherals_functions import default_bounds, \
     generate_reactions_vector, generate_core_vector
-from data_management.csv_format import parse_core_data, parse_network
+from data_management.csv_format import parse_core_data, \
+    parse_peripherals_network, parse_perturbations_data, parse_patient_data, \
+    parse_time_sequence, parse_y0_data
+from utilities.data_classes import PeripheralsData, InputFiles, InputExtra, \
+    CoreData
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
@@ -37,7 +42,7 @@ def create_network(network_file: str, core_file: str) -> NetworkSystem:
     core_data = parse_core_data(core_file)
     reactions = get_reactions_from_data(core_data)
     core = CoreSystem.generate_core(reactions)
-    network = parse_network(network_file)
+    network = parse_peripherals_network(network_file)
 
     return NetworkSystem(network, core)
 
@@ -60,6 +65,128 @@ def get_reactions_from_data(core_data: pd.DataFrame) -> SortedDict:
         reactions[columns[index]] = SortedSet(*series.axes)
 
     return reactions
+
+
+def parse_peripherals_data(network: NetworkSystem, files: InputFiles,
+                           extra: InputExtra, core_data: pd.DataFrame
+                           ) -> Iterable[Tuple[str, PeripheralsData]]:
+    """
+    Parses the data for the peripherals. For performance reasons, the method
+    returns a generator.
+
+    :param network: Instance of NetworkSystem representing the current network.
+    :param files: InputFiles to use.
+    :param extra: InputExtra for other options/files.
+    :param core_data: pandas.DataFrame with the data of the core.
+    :return: A generator that produces a tuple containing as first element the
+        name of the gene, and as second element an instance of PeripheralsData
+        with the data for that gene.
+    :raise AttributeError: If the transcription factors in the network are not
+        the same as the ones in the peripherals data and/or the perturbations
+        data, if present.
+    """
+
+    logger = logging.getLogger(__name__)
+    core_perturbations = parse_perturbations_data(extra.core_pert)
+    gene_datas = [parse_patient_data(filename) for filename in files.data]
+
+    # tries to parse the perturbations data. If an OSError is raised, usually
+    # for a missing file, the perturbations data are assumed not present.
+    try:
+        genes_perturbations = parse_perturbations_data(
+            files.perturbations, check_times=False
+        ).set_index(["source"], verify_integrity=True)
+    except OSError:
+        genes_perturbations = None
+
+    tfacts = set(network.core.tfacts)
+    for data in gene_datas:
+        data_tfacts = set(data.index.values.tolist())
+        if tfacts != data_tfacts:
+            message = "Transcription factors in the data are different from " \
+                      "the one in the network."
+            logger.error(message)
+            logger.error("Data {}".format(data_tfacts))
+            logger.error("Network {}".format(tfacts))
+            raise AttributeError(message)
+
+    # check that the transcription factors in genes_perturbations is the same
+    # of the core system
+    if genes_perturbations is not None:
+        pert_columns = set(genes_perturbations.drop(
+            "source", axis=1
+        ).columns.value.tolist())
+        if pert_columns != tfacts:
+            message = "Transcription factors in the perturbations are " \
+                      "different from the one in the network."
+            logger.error(message)
+            logger.error("Perturbations {}".format(pert_columns))
+            logger.error("Transcription factors {}".format(tfacts))
+            raise AttributeError(message)
+
+    times = parse_time_sequence(files.times)
+    for gene, reactions in network.reactions.viewitems():
+        try:
+            gene_data, gene_sigma = parse_peripheral_data(gene_datas, gene)
+        except KeyError:
+            logger.error("Searched for gene {} in data but not found."
+                         "Will be skipped".format(gene))
+            continue
+
+        gene_pert = None
+        if genes_perturbations is not None:
+            try:
+                gene_pert = genes_perturbations.ix[gene].values
+            except KeyError:
+                logger.error("Searched for gene {} in perturbations but not "
+                             "present. Will be skipped".format(gene))
+                continue
+        y0 = set_ode_y0(gene_data, extra, core_data)
+        cdata = CoreData(
+            gene_data, gene_sigma, times.copy(), core_perturbations.copy(), y0
+        )
+        pdata = PeripheralsData(cdata, gene_pert, 1, len(reactions), reactions)
+        yield gene, pdata
+
+
+def parse_peripheral_data(data_list: List[pd.DataFrame], gene_name: str) -> Tuple2V:
+    """
+    Parse the data for the corresponding gene.
+
+    :param data_list: List of patient data containing the gene.
+    :param gene_name: The name of the gene to search.
+    :return: A data Vector normalized and with the mean of the data passed in
+        the list and its standard deviation.
+    """
+
+    gene_data = np.array(
+        [data.ix[gene_name].values for data in data_list], dtype=Float
+    )
+    # axis = 1 gives the maximum for each row
+    norm_data = (gene_data.T / np.amax(gene_data, axis=1)).T
+    # axis = 0 gives the mean for each column
+    data_mean = norm_data.mean(axis=0)
+    std_dev = norm_data.std(axis=0)
+
+    return data_mean, std_dev
+
+
+def set_ode_y0(gene_data: Vector, extra: InputExtra, core_data: pd.DataFrame
+               ) -> Vector:
+    """
+    Creates a vector with the starting points for the ODE system.
+
+    :param gene_data: Vector containing the data for the gene.
+    :param extra: InputExtra instance with the name of the y0 file for the core.
+    :param core_data: Data of the core.
+    :return: Vector containing the value at time 0 of transcription factors and
+        gene in the following way:
+        [tf_1,..,tf_n, g]
+    """
+
+    core_y0 = parse_y0_data(core_data, extra)
+    gene_y0 = gene_data[0]
+    return np.array(core_y0.tolist() + gene_y0.tolist, dtype=Float)
 
 
 def problem_setup(gene_data: PeripheralsData, context: LassimContext

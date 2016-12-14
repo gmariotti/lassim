@@ -1,7 +1,6 @@
-from typing import Tuple, NamedTuple, List
+from typing import Tuple
 
 import numpy as np
-from sortedcontainers import SortedDict
 
 """
 Common type aliases used in the toolbox for improving readability.
@@ -18,15 +17,3 @@ Float = np.float64
 Tuple2V = Tuple[Vector, Vector]  # Tuple2[T] = Tuple[T, T]
 Tuple3V = Tuple[Vector, Vector, Vector]  # Tuple3[T] = Tuple[T, T, T]
 Tuple4V = Tuple[Vector, Vector, Vector, Vector]
-
-# data types
-CoreFiles = NamedTuple("Files",
-                       [("network", str), ("data", List[str]), ("times", str),
-                        ("perturbations", str)])
-CoreData = NamedTuple("CoreData",
-                      [("data", Vector), ("sigma", Vector), ("times", Vector),
-                       ("perturb", Vector), ("y0", Vector)])
-PeripheralsData = NamedTuple("PeripheralsData",
-                             [("core_data", CoreData), ("pert_gene", Vector),
-                              ("num_genes", int), ("num_react", int),
-                              ("reactions", SortedDict)])
