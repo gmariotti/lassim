@@ -106,7 +106,7 @@ def data_parsing(files: InputFiles) -> Tuple4V:
 
 
 def data_parse_perturbations(files: InputFiles, network: LassimNetwork
-                             ) -> (bool, Vector):
+                             ) -> Tuple[bool, Vector]:
     """
     Parse the data for perturbations if they are present. If they are presents,
     checks that their size corresponds to the number of transcription factors

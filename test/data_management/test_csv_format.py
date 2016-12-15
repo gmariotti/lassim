@@ -3,8 +3,7 @@ from unittest import TestCase
 
 import numpy as np
 import pandas as pd
-from nose.tools import assert_dict_equal, assert_list_equal, assert_set_equal, \
-    assert_true
+from nose.tools import assert_dict_equal, assert_list_equal, assert_true
 from numpy.testing import assert_array_equal
 from pandas.util.testing import assert_frame_equal
 from sortedcontainers import SortedDict, SortedSet

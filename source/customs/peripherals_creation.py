@@ -1,5 +1,5 @@
 import logging
-from typing import Tuple, Iterable, List
+from typing import Tuple, Iterable, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -90,18 +90,9 @@ def parse_peripherals_data(network: NetworkSystem, files: InputFiles,
     core_perturbations = parse_perturbations_data(extra.core_pert)
     gene_datas = [parse_patient_data(filename) for filename in files.data]
 
-    # tries to parse the perturbations data. If an OSError is raised, usually
-    # for a missing file, the perturbations data are assumed not present.
-    try:
-        genes_perturbations = parse_perturbations_data(
-            files.perturbations, check_times=False
-        ).set_index(["source"], verify_integrity=True)
-    except OSError:
-        genes_perturbations = None
-
-    tfacts = set(network.core.tfacts)
+    tfacts = [tfact for tfact in network.core.tfacts]
     for data in gene_datas:
-        data_tfacts = set(data.index.values.tolist())
+        data_tfacts = data.index.values.tolist()
         if tfacts != data_tfacts:
             message = "Transcription factors in the data are different from " \
                       "the one in the network."
@@ -110,19 +101,9 @@ def parse_peripherals_data(network: NetworkSystem, files: InputFiles,
             logger.error("Network {}".format(tfacts))
             raise AttributeError(message)
 
-    # check that the transcription factors in genes_perturbations is the same
-    # of the core system
-    if genes_perturbations is not None:
-        pert_columns = set(genes_perturbations.drop(
-            "source", axis=1
-        ).columns.value.tolist())
-        if pert_columns != tfacts:
-            message = "Transcription factors in the perturbations are " \
-                      "different from the one in the network."
-            logger.error(message)
-            logger.error("Perturbations {}".format(pert_columns))
-            logger.error("Transcription factors {}".format(tfacts))
-            raise AttributeError(message)
+    # tries to parse the perturbations data. If an OSError is raised, usually
+    # for a missing file, the perturbations data are assumed not present.
+    genes_perturbations = check_genes_perturbations(files, tfacts)
 
     times = parse_time_sequence(files.times)
     for gene, reactions in network.reactions.viewitems():
@@ -149,9 +130,49 @@ def parse_peripherals_data(network: NetworkSystem, files: InputFiles,
         yield gene, pdata
 
 
-def parse_peripheral_data(data_list: List[pd.DataFrame], gene_name: str) -> Tuple2V:
+def check_genes_perturbations(files: InputFiles, tfacts: List[str]
+                              ) -> Optional[pd.DataFrame]:
     """
-    Parse the data for the corresponding gene.
+    Tries to parse the perturbations file if present and compares the columns
+    in it with the list of excepted transcription factors.
+
+    :param files: InputFiles instance where to find the path to the
+        perturbations file.
+    :param tfacts: List of transcription factors expected.
+    :return: None if the file doesn't exist, otherwise the pandas.DataFrame
+        containing the perturbations data with the list of genes as index.
+    :raise AttributeError: If the transcription factors in the perturbations
+        file are not the same as the one expected.
+    """
+
+    logger = logging.getLogger(__name__)
+    try:
+        genes_perturbations = parse_perturbations_data(
+            files.perturbations, check_times=False
+        ).set_index(["source"], verify_integrity=True)
+    except OSError:
+        genes_perturbations = None
+
+    # check that the transcription factors in genes_perturbations are the same
+    # of the core system
+    if genes_perturbations is not None:
+        # doesn't need to drop the source column because is at the index now.
+        pert_columns = genes_perturbations.columns.value.tolist()
+        if pert_columns != tfacts:
+            message = "Transcription factors in the perturbations are " \
+                      "different from the one in the network."
+            logger.error(message)
+            logger.error("Perturbations {}".format(pert_columns))
+            logger.error("Transcription factors {}".format(tfacts))
+            raise AttributeError(message + " Check log for more info.")
+
+    return genes_perturbations
+
+
+def parse_peripheral_data(data_list: List[pd.DataFrame], gene_name: str
+                          ) -> Tuple2V:
+    """
+    Parses the patient data for the corresponding gene.
 
     :param data_list: List of patient data containing the gene.
     :param gene_name: The name of the gene to search.
