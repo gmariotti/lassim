@@ -12,6 +12,27 @@ PyGMO against them, but if any error occurs, start considering the possibility o
 
 **[!]** All the installation processes assume clang as the default compiler, but it is not mandatory.
 
+Anaconda installation
+---------------------
+For making the installation as simple as possible, [Anaconda](https://anaconda.org/) offers an environment with almost all the packages
+required for using the toolbox, so is suggested as Python installation. 
+
+Download [Anaconda3-4.1.1-Linux-x86_64.sh](https://repo.continuum.io/archive/index.html) and run the following commands:
+```
+bash Anaconda3-4.1.1-Linux-x86_64.sh
+conda create -n <env-name> --clone root
+source activate <env-name>
+pip install sortedcontainers
+```
+Now, for [Boost installation](#boost-installation) and [PyGMO installation](#pygmo-installation) remember to run always `source activate <env-name>` or 
+directly add the directory to the system path.
+
+Also, you'll need to add the following environment variable, usually by adding them to the `.bashrc` file
+```
+# CUSTOM - anaconda3-4.1.1
+export CPLUS_INCLUDE_PATH="path/to/anaconda/include/python3.5m/:$CPLUS_INCLUDE_PATH"
+```
+
 Boost installation
 ------------------
 Download `boost_<version>.tar.gz` from [boost website](http://www.boost.org), then run the following commands:
@@ -94,10 +115,9 @@ python -c "from PyGMO import test; test.run_full_test_suite()"
 ```
 Make sure to pass all the test after the call to `make test` and `python -c ...`
 
-Then, add the following environment variables, usually by adding them to the `.bashrc` file
+Then, add the following environment variable, usually by adding them to the `.bashrc` file
 ```
 # CUSTOM - PyGMO
-export CPLUS_INCLUDE_PATH="path/to/python/include/python<version>/:$CPLUS_INCLUDE_PATH"
 export LD_LIBRARY_PATH="path/to/install/pagmo/lib:$LD_LIBRARY_PATH"
 ```
 
