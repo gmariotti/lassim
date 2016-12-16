@@ -1,11 +1,11 @@
 import logging
-from typing import Dict, Callable, NamedTuple, List
+from typing import Dict, Callable, NamedTuple, List, Tuple
 
 import numpy as np
 from sortedcontainers import SortedDict
 
 from core.base_optimization import BaseOptimization
-from core.core_problem import CoreProblemFactory
+from core.core_problem import CoreProblemFactory, CoreProblem
 from core.core_system import CoreSystem
 from core.factories import OptimizationFactory
 from core.lassim_context import OptimizationArgs, LassimContext
@@ -24,7 +24,7 @@ in an already existing pipeline.
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 
 def create_core(network_file: str) -> CoreSystem:
@@ -146,7 +146,8 @@ def data_parse_perturbations(files: Dict[str, str], core: CoreSystem
 
 def optimization_setup(core: CoreSystem, problem_builder: CoreProblemFactory,
                        main_args: List[OptimizationArgs],
-                       sec_args: List[OptimizationArgs]) -> BaseOptimization:
+                       sec_args: List[OptimizationArgs]
+                       ) -> Tuple[BaseOptimization, CoreProblem]:
     """
     Setup of a BaseOptimization instance, constructing the problem using the
     input CoreSystem, the CoreProblemFactory and the OptimizationArgs.
@@ -185,9 +186,8 @@ def optimization_setup(core: CoreSystem, problem_builder: CoreProblemFactory,
         # )
     elif len(sec_args) == 0:
         opt_builder = OptimizationFactory.new_base_optimization(
-            main_opt.type, problem_builder, problem, reactions_ids,
-            iter_function
+            main_opt.type, iter_function
         )
     else:
         raise RuntimeError("How the hell did you get there?!")
-    return opt_builder
+    return opt_builder, problem

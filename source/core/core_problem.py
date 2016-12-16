@@ -8,7 +8,7 @@ from core.utilities.type_aliases import Vector, Float, Tuple2V
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 
 class CoreProblem(LassimProblem):
@@ -165,12 +165,14 @@ class CoreProblemFactory(LassimProblemFactory):
     Must be instantiated with a call to new_instance.
     """
 
-    def __init__(self, cost_data: Tuple, y0: Vector, ode_function: Callable[
-        [Vector, Vector, Vector, Vector, Vector, int], Vector
-    ], pert_function: Callable[
-        [Vector, int, Vector, Vector, Vector, Vector, int,
-         Callable[[Vector, Vector, Vector, Vector, Vector, int], Vector]],
-        float]):
+    def __init__(self, cost_data: Tuple[Vector, ...], y0: Vector,
+                 ode_function: Callable[
+                     [Vector, Vector, Vector, Vector, Vector, int], Vector],
+                 pert_function: Callable[
+                     [Vector, int, Vector, Vector, Vector, Vector, int,
+                      Callable[[Vector, Vector, Vector, Vector, Vector, int],
+                               Vector]], float],
+                 pert_factor: float):
         CoreProblem._s_ode_function = ode_function
         # divides data considering presence or not of perturbations data
         if len(cost_data) == 4:
@@ -181,55 +183,63 @@ class CoreProblemFactory(LassimProblemFactory):
         self.__is_pert = False
         if pert_function is not None:
             CoreWithPerturbationsProblem._s_pert_function = pert_function
+            CoreWithPerturbationsProblem._s_pert_factor = pert_factor
             self.__is_pert = True
 
     @classmethod
-    def new_instance(cls, cost_data: Tuple, y0: Vector, ode_function: Callable[
-        [Vector, Vector, Vector, Vector, Vector, int], Vector
-    ], pert_function: Callable[
-        [Vector, int, Vector, Vector, Vector, Vector, int,
-         Callable[[Vector, Vector, Vector, Vector, Vector, int, Vector], Vector]
-         ], float] = None) -> 'CoreProblemFactory':
+    def new_instance(cls, cost_data: Tuple[Vector, ...], y0: Vector,
+                     ode_function: Callable[
+                         [Vector, Vector, Vector, Vector, Vector, int], Vector],
+                     pert_function: Callable[
+                         [Vector, int, Vector, Vector, Vector, Vector, int,
+                          Callable[[Vector, Vector, Vector, Vector, Vector, int,
+                                    Vector], Vector]], float] = None,
+                     pert_factor: float = 0) -> 'CoreProblemFactory':
         """
         Builds a factory for the generation of
         CoreProblem/CoreWithPerturbationsProblem instances with the parameters
         passed as arguments.
+
         :param cost_data: Tuple containing the vectors for the cost evaluation.
-        The first three elements must be the data, the sigma and the time
-        sequence. An optional forth value means the presence of perturbations
-        data.
+            The first three elements must be the data, the sigma and the time
+            sequence. An optional forth value means the presence of
+            perturbations data.
         :param y0: Starting values for ODE evaluation.
         :param ode_function: Function for performing the ODE evaluation.
         :param pert_function: Function for evaluate the perturbations impact.
+        :param pert_factor: The perturbations factor for perturbations impact.
         :return: An instance of a CoreProblemFactory.
         """
+
         factory = CoreProblemFactory(
-            cost_data, y0, ode_function, pert_function
+            cost_data, y0, ode_function, pert_function, pert_factor
         )
         return factory
 
     def build(self, dim: int, bounds: Tuple[List[float], List[float]],
               vector_map: Tuple2V, known_sol: List[Vector] = None,
-              pert_factor: float = 0, **kwargs) -> CoreProblem:
+              **kwargs) -> CoreProblem:
         """
         Construct a CoreProblem/CoreWithPerturbationsProblem with the parameters
         passed in the factory instantiation.
+
         :param dim: Number of variables to optimize for the problem.
         :param bounds: Tuple with the list of lower bounds and upper bounds for
-        each problem variable. Both list must be of the same size of dim.
+            each problem variable. Both list must have size equal to dim.
         :param vector_map: Tuple containing two vectors needed for the cost
-        evaluation. Their values and their representation are independent from
-        the problem.
+            evaluation. Their values and their representation are independent
+            from the problem.
         :param known_sol: List of known solutions for this problem. Useful for
-        keeping trace of previously found solutions.
-        :param pert_factor: The perturbations factor for perturbations impact.
+            keeping trace of previously found solutions.
+        :param kwargs: Optional extra values, not used here. Used them in
+            CoreProblemFactory subclasses.
         :return: An instance of a CoreProblem/CoreWithPerturbationsProblem.
         """
+
         CoreProblem._s_dim = dim
         CoreProblem._s_bounds = bounds
         CoreProblem._s_map_tuple = vector_map
         if not self.__is_pert:
             return CoreProblem(known_sol=known_sol)
         else:
-            CoreWithPerturbationsProblem._s_pert_factor = pert_factor
             return CoreWithPerturbationsProblem(known_sol=known_sol)

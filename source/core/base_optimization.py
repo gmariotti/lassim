@@ -1,6 +1,6 @@
 import logging
 from inspect import signature
-from typing import Callable
+from typing import Callable, Tuple, Optional
 
 from PyGMO import topology, archipelago, island
 from sortedcontainers import SortedDict, SortedList
@@ -13,7 +13,7 @@ from core.solutions_handler import SolutionsHandler
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 
 class BaseOptimization:
@@ -23,17 +23,19 @@ class BaseOptimization:
     the same optimization object but with different parameters.
     """
 
-    def __init__(self, algo, prob_factory: LassimProblemFactory,
-                 prob: LassimProblem, reactions: SortedDict,
-                 iter_func: Callable[..., bool]):
+    def __init__(self, algo,
+                 iter_func: Callable[..., Tuple[Optional[LassimProblem],
+                                                SortedDict, bool]]):
         self._algorithm = algo
-        self._prob_factory = prob_factory
-        self._start_problem = prob
-        self._start_reactions = reactions
         # can be None, remember it
         self._iterate = iter_func
 
-        # this value will be set after a call to build
+        # these values will be set after a call to build
+        # in this way is possible to instantiate this class multiple time
+        # without having to change the iteration function and the algorithm
+        self._prob_factory = None
+        self._start_problem = None
+        self._start_reactions = None
         self._context = None
         self._handler = None
         self._logger = None
@@ -41,26 +43,35 @@ class BaseOptimization:
         self._n_islands = 0
         self._n_individuals = 0
 
-    def build(self, context: LassimContext, handler: SolutionsHandler,
-              logger: logging.Logger, **kwargs) -> 'BaseOptimization':
+    def build(self, context: LassimContext, prob_factory: LassimProblemFactory,
+              start_problem: LassimProblem, reactions: SortedDict,
+              handler: SolutionsHandler, logger: logging.Logger,
+              **kwargs) -> 'BaseOptimization':
         """
         Used for building a BaseOptimization with the parameter passed in the
         __init__ call.
+
         :param context: A LassimContext instance. Its OptimizationArgs must
-        contain the type of algorithm to use and the parameters needed.
+            contain the type of algorithm to use and the parameters needed.
+        :param prob_factory: The factory for building new instances of the
+            problem. At each iteration, it will be passed as argument of the
+            iter_func if has been set.
+        :param start_problem: The starting problem to solve.
+        :param reactions: The map of reactions for this problem.
         :param handler: The SolutionsHandler instance for manage the list of
-        solutions found in each iteration.
+            solutions found in each iteration.
         :param logger: A logger for logging various optimization steps.
         :param kwargs: Use kwargs for extra value in extension class.
         :return: the BaseOptimization instance built from the parameter context.
         """
-        new_instance = self.__class__(
-            self._algorithm, self._prob_factory, self._start_problem,
-            self._start_reactions, self._iterate
-        )
-        new_instance._logger = logger
+
+        new_instance = self.__class__(self._algorithm, self._iterate)
         new_instance._context = context
+        new_instance._prob_factory = prob_factory
+        new_instance._start_problem = start_problem
+        new_instance._start_reactions = reactions
         new_instance._handler = handler
+        new_instance._logger = logger
 
         # optimization setup
         opt_args = context.primary_first
@@ -84,10 +95,12 @@ class BaseOptimization:
         Evaluates which parameters in the OptimizationArgs instance are valid
         and which not for the algorithm set. Override this method if you want
         to dynamically change the parameters between each optimization cycle.
+
         :param opt_args: An instance of OptimizationArgs for testing the
-        parameters.
+            parameters.
         :return: A dictionary with just the valid parameters for the algorithm.
         """
+
         valid_params = signature(self._algorithm.__init__).parameters
         input_params = opt_args.params
         output_params = {name: input_params[name]
@@ -99,11 +112,13 @@ class BaseOptimization:
         """
         Tries to solve this optimization problem by generating a list of
         BaseSolution ordered by their cost.
+
         :param topol: The topology to use for the archipelago. The default value
-        is an unconnected topology.
+            is an unconnected topology.
         :param kwargs: Extra parameters, to be used for method override.
         :return: A SortedList of BaseSolution for this optimization problem.
         """
+
         solutions = SortedList()
 
         try:
@@ -147,11 +162,13 @@ class BaseOptimization:
         Creates a new archipelago to solve the problem with the algorithm passed
         as argument, it solve it, pass the list of solutions to the handler and
         then returns the best solution found.
+
         :param prob: The LassimProblem instance to solve.
         :param reactions: The dictionary of reactions associated to the problem.
         :param topol: The topology of the archipelago.
         :return: The best solution found from the solving of the prob instance.
         """
+
         archi = self._generate_archipelago(prob, topol)
         archi.evolve(self._n_evolutions)
         archi.join()
@@ -163,10 +180,12 @@ class BaseOptimization:
         """
         Generates a PyGMO.archipelago from an input problem and an input
         topology. The algorithm used is the one set at creation time.
+
         :param prob: The LassimProblem instance to solve.
         :param topol: The wanted topology for the archipelago.
         :return: The archipelago for solving the LassimProblem.
         """
+
         archi = archipelago(
             self._algorithm, prob, self._n_islands - 1, self._n_individuals,
             topology=topol
@@ -189,11 +208,13 @@ class BaseOptimization:
         From a PyGMO.archipelago, generates the list of best solutions created
         from each island, constructing each solution using the class reference
         in the context instance.
+
         :param archi: The PyGMO.archipelago instance from which extracting the
         solution of each island.
         :param prob: The LassimProblem that has been solved by archi.
         :param reactions: The map of reactions specific for this solution.
         """
+
         champions = [isl.population.champion for isl in archi]
         solutions = SortedList(
             [self._context.SolutionClass(champ, reactions, prob)

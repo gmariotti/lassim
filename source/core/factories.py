@@ -1,16 +1,17 @@
-from typing import Callable, List
+from typing import Callable, List, Tuple, Optional
 
 from PyGMO import algorithm
 from sortedcontainers import SortedDict
 
 from core.base_optimization import BaseOptimization
-from core.lassim_problem import LassimProblem, LassimProblemFactory
+from core.lassim_problem import LassimProblem
+
 # from core.optimizations.multi_start_optimization import MultiStartOptimization
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 
 class OptimizationFactory:
@@ -44,27 +45,24 @@ class OptimizationFactory:
         return cls.labels_cus()[0]
 
     @classmethod
-    def new_base_optimization(cls, o_type: str, p_builder: LassimProblemFactory,
-                              prob: LassimProblem, reactions: SortedDict,
-                              iter_func: Callable[..., bool] = None
+    def new_base_optimization(cls, o_type: str,
+                              iter_func: Callable[
+                                  ..., Tuple[Optional[LassimProblem],
+                                             SortedDict, bool]] = None
                               ) -> BaseOptimization:
         """
         Factory method for creation of a BaseOptimization object.
+
         :param o_type: The label of an valid optimization algorithm.
-        :param p_builder: A factory for building a LassimProblem instance.
-        :param prob: The LassimProblem instance to solve at first.
-        :param reactions: The dictionary with the reactions associated to the
-        LassimProblem
         :param iter_func: An optional iteration function to run after each
-        completed optimization. Use it in order to dynamically change the
-        problem to solve and its reactions.
+            completed optimization. Use it in order to dynamically change the
+            problem to solve and its reactions.
         :return: An instance of BaseOptimization.
         """
+
         # raises KeyError if not present
         algo = cls._labels_cus[o_type]
-        return BaseOptimization(
-            algo, p_builder, prob, reactions, iter_func
-        )
+        return BaseOptimization(algo, iter_func)
 
     # @classmethod
     # def new_multistart_optimization(cls, o_type: str,
