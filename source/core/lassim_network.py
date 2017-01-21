@@ -75,10 +75,12 @@ class CoreSystem(LassimNetwork):
         """
 
         self._network_dict = net_dict
+        self.__tfacts = SortedSet(net_dict.keys()).union(
+            {tfact for tflist in net_dict.viewvalues() for tfact in tflist}
+        )
         self.__reactions, self.__react_count = self.__reactions_from_network(
             correction
         )
-        self.__tfacts = self.__reactions.keys()
 
     @classmethod
     def generate_core(cls, reactions: SortedDict) -> 'CoreSystem':
