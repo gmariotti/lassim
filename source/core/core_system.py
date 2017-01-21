@@ -21,10 +21,10 @@ class CoreSystem:
         transcription factors plus itself
         """
         self._network = network
-        self.tfacts = network.keys()
         self.__reactions, self.__react_count = self.__reactions_from_network(
             correction
         )
+        self.tfacts = self.__reactions.keys()
 
     def __reactions_from_network(self, correction: bool) -> (SortedDict, int):
         """
