@@ -23,8 +23,8 @@ MYB\tMYB
 GATA3\tNFATC3"""
 
 patient_file_data = """source\tt0\tt1\tt2
-NFATC3\t0\t3\t100
 GATA3\t0\t33\t99.9
+NFATC3\t0\t3\t100
 NFKB1\t1\t3\t89"""
 
 time_sequence_file_data = """t0\tt1\tt2\tt3
@@ -93,14 +93,15 @@ class TestCSVFormat(TestCase):
 
     def test_ParsePatientData(self):
         data = np.array([
-            np.array([0, 3, 100], dtype=np.float64),
             np.array([0, 33, 99.9], dtype=np.float64),
+            np.array([0, 3, 100], dtype=np.float64),
             np.array([1, 3, 89], dtype=np.float64)
         ])
         expected = pd.DataFrame(
             data=data, columns=["t0", "t1", "t2"],
-            index=["NFATC3", "NFKB1", "GATA3"]
+            index=["GATA3", "NFATC3", "NFKB1"],
         )
+        expected.index.names = ["source"]
         actual = parse_patient_data(self.patient_filename)
         assert_frame_equal(expected, actual,
                            "Expected\n{}\nreceived\n{}".format(

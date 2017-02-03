@@ -1,6 +1,6 @@
 import logging
 from argparse import ArgumentParser
-from typing import Callable, NamedTuple, Iterable, Tuple, List, Dict
+from typing import Callable, NamedTuple, Iterable, Tuple, List
 
 import numpy as np
 from PyGMO import topology
@@ -14,9 +14,9 @@ from core.handlers.plot_handler import PlotBestSolutionsHandler
 from core.lassim_context import LassimContext, OptimizationArgs
 from core.solutions.lassim_solution import LassimSolution
 from core.utilities.type_aliases import Tuple3V
-from utilities.data_classes import InputFiles, OutputData
 from customs.core_creation import create_core, problem_setup, \
     optimization_setup
+from utilities.data_classes import InputFiles, OutputData
 from utilities.logger_setup import LoggerSetup
 from utilities.terminal import set_core_files_args, \
     set_main_optimization_args, set_logger_args, set_output_args, \

@@ -82,6 +82,7 @@ def parse_patient_data(filename: str, sep: str = "\t") -> pd.DataFrame:
         raise AttributeError("Not valid data headers, check log.")
 
     data.set_index(h_source, inplace=True, verify_integrity=True)
+    data = data.apply(lambda x: x.astype(np.float64))
 
     return data.sort_index()
 

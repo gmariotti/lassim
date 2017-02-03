@@ -1,9 +1,10 @@
 import logging
+import os
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.1.0"
+__version__ = "0.3.0"
 
 
 class LoggerSetup:
@@ -31,6 +32,13 @@ class LoggerSetup:
 
     def set_file_log(self, logfile, level=logging.WARNING):
         logger = logging.getLogger()
+
+        # check that the directory where to put the logfile exist
+        directory = os.path.dirname(logfile)
+        # checks also that the name of the directory is not an empty string
+        if directory and not os.path.isdir(directory):
+            os.makedirs(directory)
+
         self._file_handler = logging.FileHandler(logfile)
         self._file_handler.setLevel(level)
         self._file_handler.setFormatter(self._formatter)
