@@ -13,3 +13,4 @@ OUTPUT/
 cluster/
 source/core/build/
 analysis_*/
+*.ini

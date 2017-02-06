@@ -1,5 +1,9 @@
-from configparser import ConfigParser
-from typing import List, Tuple, NamedTuple, Callable, Dict
+from configparser import ConfigParser, NoOptionError
+from typing import List, Tuple, NamedTuple, Callable, Dict, Any
+
+import logging
+
+from utilities.logger_setup import LoggerSetup
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
@@ -47,6 +51,12 @@ class ConfigurationBuilder(Configuration):
         self._parser.set(self.__current_section, key, value)
         return self
 
+    def add_optional_key_value(self, key: str, value: str, *args: str
+                               ) -> 'ConfigurationBuilder':
+        commented_key = "#" + key
+        comment = "Remove # in order to use the option."
+        return self.add_key_value(commented_key, value, comment, *args)
+
     def build(self):
         with open(self._filename, "w") as config_file:
             self._parser.write(config_file)
@@ -79,9 +89,35 @@ class ConfigurationParser(Configuration):
             arguments = conversion(arguments)
         return dataclass(**arguments)
 
+    def parse_logger_section(self, section: str, setup: LoggerSetup):
+        config = self.parse()._parser
+        logger = logging.getLogger(__name__)
+        log_file = None
+        log_verbosity = False
+        level = logging.WARNING
+        for key in self.__expected[section]:
+            try:
+                verbosity = config.getboolean(section, key)
+                log_verbosity = verbosity
+            except ValueError:
+                log_file = config.get(section, key, fallback=None)
+            except NoOptionError:
+                logger.info("Printing logs on terminal.")
+        if log_verbosity:
+            level = logging.INFO
+            setup.change_root_level(level)
+            setup.change_stream_level(level)
+            logger.info("Logging in verbosity mode.")
+        if log_file is not None:
+            setup.set_file_log(log_file, level)
+            logger.info(
+                "Log file is {}".format(log_file)
+            )
+
     def parse(self) -> 'ConfigurationParser':
         self._parser.read(self._filename)
         expected_sections = self.__expected.keys()
         if not set(expected_sections).issubset(self._parser.sections()):
             raise RuntimeError
         return self
+

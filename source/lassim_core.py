@@ -1,6 +1,5 @@
 import logging
-from argparse import ArgumentParser
-from typing import Callable, NamedTuple, Iterable, Tuple, List
+from typing import Callable, NamedTuple, Iterable
 
 import numpy as np
 from PyGMO import topology
@@ -11,17 +10,12 @@ from core.functions.perturbation_functions import perturbation_func_sequential
 from core.handlers.composite_handler import CompositeSolutionsHandler
 from core.handlers.csv_handlers import SimpleCSVSolutionsHandler
 from core.handlers.plot_handler import PlotBestSolutionsHandler
-from core.lassim_context import LassimContext, OptimizationArgs
+from core.lassim_context import LassimContext
 from core.solutions.lassim_solution import LassimSolution
 from core.utilities.type_aliases import Tuple3V
 from customs.core_creation import create_core, problem_setup, \
     optimization_setup
-from utilities.data_classes import InputFiles, OutputData
-from utilities.logger_setup import LoggerSetup
-from utilities.terminal import set_core_files_args, \
-    set_main_optimization_args, set_logger_args, set_output_args, \
-    get_logger_args, get_core_files_args, get_output_args, \
-    get_main_optimization_args
+from utilities.configuration_custom import core_terminal
 
 """
 Main script for handling the core problem in the Lassim Toolbox.
@@ -33,35 +27,6 @@ __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
 __version__ = "0.3.0"
-
-
-def lassim_core_terminal(script_name: str
-                         ) -> Tuple[InputFiles, OutputData,
-                                    List[OptimizationArgs],
-                                    List[OptimizationArgs]]:
-    parser = ArgumentParser(script_name)
-    # set terminal arguments
-    set_core_files_args(parser)
-    set_main_optimization_args(parser)
-    set_logger_args(parser)
-    set_output_args(parser)
-
-    # get terminal arguments
-    setup = LoggerSetup()
-
-    # retrieve input from terminal
-    args = parser.parse_args()
-    get_logger_args(args, setup)
-    files, is_pert = get_core_files_args(args)
-    output = get_output_args(args)
-    core_args = get_main_optimization_args(args)
-
-    logger = logging.getLogger(__name__)
-    logger.info("Logging Core Optimization arguments...")
-    for core_arg in core_args:
-        core_arg.log_args(logger, is_pert)
-
-    return files, output, core_args, list()
 
 
 def data_producer(context: LassimContext, data_tuple: NamedTuple
@@ -88,7 +53,8 @@ def lassim_core():
     script_name = "lassim_core"
 
     # arguments from terminal are parsed
-    files, output, main_args, sec_args = lassim_core_terminal(script_name)
+    # files, output, main_args, sec_args = lassim_core_terminal(script_name)
+    files, output, main_args, sec_args = core_terminal(script_name)
     core = create_core(files.network)
     # creates a context for solving this problem
     context = LassimContext(
