@@ -1,7 +1,6 @@
-from configparser import ConfigParser, NoOptionError
-from typing import List, Tuple, NamedTuple, Callable, Dict, Any
-
 import logging
+from configparser import ConfigParser, NoOptionError
+from typing import List, Tuple, NamedTuple, Callable, Dict
 
 from utilities.logger_setup import LoggerSetup
 
@@ -121,3 +120,8 @@ class ConfigurationParser(Configuration):
             raise RuntimeError
         return self
 
+
+def from_parser_to_builder(parser: ConfigurationParser):
+    builder = ConfigurationBuilder(parser._filename)
+    builder._parser = parser._parser
+    return builder

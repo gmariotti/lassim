@@ -44,7 +44,6 @@ def output_conversion(output_dict: Dict):
 
 
 def optimization_conversion(optimization_dict: Dict):
-    logger = logging.getLogger(__name__)
     algorithm = OptimizationFactory.cus_default()
     if optimization_dict["type"] is not None:
         algorithm = optimization_dict["type"].upper()
@@ -58,25 +57,25 @@ def optimization_conversion(optimization_dict: Dict):
     if optimization_dict["cores"] is not None:
         cores = int(optimization_dict["cores"])
         if cores < 1:
-            raise RuntimeError
+            raise RuntimeError("Expected at least 1 core!")
 
     evolvs = 1
     if optimization_dict["evolutions"] is not None:
         evolvs = int(optimization_dict["evolutions"])
         if evolvs < 1:
-            raise RuntimeError
+            raise RuntimeError("Expected at least 1 evolution!")
 
     individuals = 1
     if optimization_dict["individuals"] is not None:
         individuals = int(optimization_dict["individuals"])
         if individuals < 1:
-            raise RuntimeError
+            raise RuntimeError("Expected at least 1 individual!")
 
     pert_factor = 0
     if optimization_dict["perturbation factor"] is not None:
         pert_factor = float(optimization_dict["perturbation factor"])
         if pert_factor < 0 or pert_factor > 1:
-            raise RuntimeError
+            raise RuntimeError("perturbation factor must be between 0 and 1!")
 
     return {
         "opt_type": algorithm, "params": params, "num_cores": cores,
