@@ -13,9 +13,9 @@ from core.handlers.plot_handler import PlotBestSolutionsHandler
 from core.lassim_context import LassimContext
 from core.solutions.lassim_solution import LassimSolution
 from core.utilities.type_aliases import Tuple3V
+from customs.configuration_custom import core_terminal
 from customs.core_creation import create_core, problem_setup, \
     optimization_setup
-from utilities.configuration_custom import core_terminal
 
 """
 Main script for handling the core problem in the Lassim Toolbox.

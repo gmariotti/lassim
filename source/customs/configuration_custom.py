@@ -11,7 +11,6 @@ from core.lassim_context import OptimizationArgs
 from utilities.configuration import ConfigurationParser, ConfigurationBuilder
 from utilities.data_classes import InputFiles, OutputData
 from utilities.logger_setup import LoggerSetup
-from utilities.terminal import set_logger_args
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
@@ -94,7 +93,6 @@ def core_terminal(script_name: str
                         help="Some message about configuration")
     parser.add_argument("-c", "--configuration-helper", action="store_true",
                         help="TODO")
-    set_logger_args(parser)
     args = parser.parse_args()
     if getattr(args, "configuration_helper"):
         core_configuration_example(args.configuration)
@@ -129,7 +127,10 @@ def core_terminal(script_name: str
     return files, output, [main_opt], list()
 
 
+# noinspection PyUnresolvedReferences
 def core_configuration_example(ini_file: str):
+    import customs.configuration_extensions
+
     ConfigurationBuilder(ini_file).add_section(
         "Input Data", "Section containing the data for the toolbox"
     ).add_key_value(
@@ -139,43 +140,41 @@ def core_configuration_example(ini_file: str):
     ).add_key_value(
         "times", "file", "Time instance file compatible with previous data"
     ).add_optional_key_value(
-        "perturbations", "file", "Value for the perturbations file."
-    ).add_section(
-        "Optimization", "Section containing the optimization parameters"
-    ).add_optional_key_value(
-        "type", OptimizationFactory.cus_default(),
-        "Optimization algorithm to use",
-        "List of possible arguments is {}".format(
-            ", ".join(OptimizationFactory.labels_cus())
-        ), "http://esa.github.io/pygmo/documentation/algorithms.html for info"
-    ).add_optional_key_value(
-        "parameters", "file.json", "Optimization parameters"
-    ).add_optional_key_value(
-        "cores", str(psutil.cpu_count()),
-        "Number of cores to use for optimization"
-    ).add_optional_key_value(
-        "evolutions", "1", "Number of evolutions to run"
-    ).add_optional_key_value(
-        "individuals", "1", "Number of individuals per island"
-    ).add_optional_key_value(
-        "perturbation factor", "0",
-        "Weight of perturbations in cost function", "Must be between 0 and 1"
-    ).add_section(
-        "Output", "Section containing info for the output of the toolbox"
-    ).add_optional_key_value(
-        "directory", "dir", "Directory where to put the solutions"
-    ).add_optional_key_value(
-        "num solutions", "1", "Number of solutions to save for each iteration"
-    ).add_section(
-        "Logging", "Section containing options for toolbox logging"
-    ).add_optional_key_value(
-        "log", "file", "Name of the file where to save the logging information"
-    ).add_optional_key_value(
-        "verbosity", "False",
-        "Set to True in order to increase verbosity of the toolbox"
-    ).build()
+        "perturbations", "file", "Value for the perturbations file"
+    ).add_optimization_section().add_output_section(
+    ).add_logger_section().build()
 
     print("Generated {} as example.".format(ini_file))
+
+
+# noinspection PyUnresolvedReferences
+def peripheral_configuration_example(ini_file: str):
+    import customs.configuration_extensions
+
+    ConfigurationBuilder(ini_file).add_section(
+        "Input Data", "Section containing the data for the toolbox"
+    ).add_key_value(
+        "network", "file", "File containing the list of peripheral genes"
+    ).add_key_values(
+        "data", ["file1", "file2"], "2 or more data time files"
+    ).add_key_value(
+        "times", "file", "Time instance file compatible with previous data"
+    ).add_optional_key_value(
+        "perturbations", "file", "Value for the perturbations file"
+    ).add_section(
+        "Input Core", "Section containing the data of a completed core"
+    ).add_key_value(
+        "core", "file", "File containing the parameters of the core"
+    ).add_optional_key_value(
+        "perturbations", "file", "Value for the perturbations file of the core"
+    ).add_section(
+        "Extra", "Extra parameters to use"
+    ).add_key_value(
+        "num cores", "1", "Number of cores to use for this task"
+    ).add_optimization_section().add_output_section(
+    ).add_logger_section().build()
+
+    print("Generated configuration file example {}".format(ini_file))
 
 
 def input_validity_check(files: Dict) -> Dict:

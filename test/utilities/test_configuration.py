@@ -30,7 +30,7 @@ class TestConfiguration(TestCase):
         if os.path.isfile(self.filename):
             os.remove(self.filename)
 
-    def test_CreateValidInputData(self):
+    def test_CreateValidSingleSection(self):
         input_single_section = """[Input Data]
         network = test_network.txt
         ; data must be a list of values
@@ -109,7 +109,7 @@ class TestConfiguration(TestCase):
                              expected, actual
                          ))
 
-    def test_ReadValidInputData(self):
+    def test_ReadValidSingleSectionWithComments(self):
         input_single_section = """[Input Data]
                 network = test_network.txt
                 ; data must be a list of values
