@@ -10,26 +10,40 @@ __license__ = "GNU General Public License v3.0"
 __version__ = "0.3.0"
 
 InputFiles = NamedTuple(
-    "InputFiles", [("network", str), ("data", List[str]), ("times", str),
-                   ("perturbations", str)]
+    "InputFiles",
+    [("network", str), ("data", List[str]), ("times", str),
+     ("perturbations", str)]
+)
+
+CoreFiles = NamedTuple(
+    "CoreFiles",
+    [("core_system", str), ("core_pert", str), ("core_y0", str)]
+)
+
+OutputFiles = NamedTuple(
+    "OutputFiles",
+    [("directory", str), ("num_solutions", int)]
 )
 
 InputExtra = NamedTuple(
-    "InputExtra", [("core", str), ("num_cores", int), ("core_pert", str),
-                   ("core_y0", str)]
-)
-
-OutputData = NamedTuple(
-    "OutputData", [("directory", str), ("num_solutions", int)]
+    "InputExtra",
+    [("num_tasks", str)]
 )
 
 CoreData = NamedTuple(
-    "CoreData", [("data", Vector), ("sigma", Vector), ("times", Vector),
-                 ("perturb", Vector), ("y0", Vector)]
+    "CoreData",
+    [("data", Vector), ("sigma", Vector), ("times", Vector),
+     ("perturb", Vector), ("y0", Vector)]
 )
 
-PeripheralsData = NamedTuple(
-    "PeripheralsData", [("core_data", CoreData), ("pert_gene", Vector),
-                        ("num_genes", int), ("num_react", int),
-                        ("reactions", SortedDict)]
+PeripheralData = NamedTuple(
+    "PeripheralData",
+    [("data", Vector), ("sigma", Vector), ("times", Vector),
+     ("perturb", Vector), ("y0", Vector)]
+)
+
+PeripheralWithCoreData = NamedTuple(
+    "PeripheralWithCoreData",
+    [("peripheral_data", PeripheralData), ("core_pert", Vector),
+     ("y0_combined", Vector), ("num_react", int), ("reactions", SortedDict)]
 )

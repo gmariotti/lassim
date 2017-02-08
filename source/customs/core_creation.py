@@ -14,7 +14,7 @@ from customs.core_functions import default_bounds, generate_reactions_vector, \
     iter_function
 from data_management.csv_format import parse_network, parse_time_sequence, \
     parse_patient_data, parse_perturbations_data
-from utilities.data_classes import CoreData, InputFiles
+from utilities.data_classes import InputFiles, CoreData
 
 """
 Set of custom functions for core creation and general setup of the problem.

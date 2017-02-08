@@ -9,7 +9,7 @@ import psutil
 from core.factories import OptimizationFactory
 from core.lassim_context import OptimizationArgs
 from utilities.configuration import ConfigurationParser, ConfigurationBuilder
-from utilities.data_classes import InputFiles, OutputData
+from utilities.data_classes import InputFiles, OutputFiles
 from utilities.logger_setup import LoggerSetup
 
 __author__ = "Guido Pio Mariotti"
@@ -83,9 +83,12 @@ def optimization_conversion(optimization_dict: Dict):
     }
 
 
+# noinspection PyUnresolvedReferences
 def core_terminal(script_name: str
-                  ) -> Tuple[InputFiles, OutputData,
+                  ) -> Tuple[InputFiles, OutputFiles,
                              List[OptimizationArgs], List[OptimizationArgs]]:
+    import customs.configuration_parser_extensions
+
     logger = logging.getLogger(__name__)
     # parse terminal option
     parser = ArgumentParser(script_name)
@@ -100,14 +103,8 @@ def core_terminal(script_name: str
 
     config = ConfigurationParser(args.configuration).define_section(
         "Input Data", "network", "data", "times", "perturbations"
-    ).define_section(
-        "Optimization", "type", "parameters", "cores", "evolutions",
-        "individuals", "perturbation factor"
-    ).define_section(
-        "Output", "directory", "num solutions"
-    ).define_section(
-        "Logging", "log", "verbosity"
-    )
+    ).define_optimization_section().define_output_section(
+    ).define_logger_section()
 
     config.parse_logger_section("Logging", LoggerSetup())
 
@@ -116,7 +113,7 @@ def core_terminal(script_name: str
     if files.perturbations is not None:
         is_pert = True
 
-    output = config.parse_section("Output", OutputData, output_conversion)
+    output = config.parse_section("Output", OutputFiles, output_conversion)
 
     main_opt = config.parse_section(
         "Optimization", OptimizationArgs, optimization_conversion
@@ -129,14 +126,14 @@ def core_terminal(script_name: str
 
 # noinspection PyUnresolvedReferences
 def core_configuration_example(ini_file: str):
-    import customs.configuration_extensions
+    import customs.configuration_builder_extensions
 
     ConfigurationBuilder(ini_file).add_section(
         "Input Data", "Section containing the data for the toolbox"
     ).add_key_value(
         "network", "file", "File representing the network"
     ).add_key_values(
-        "data", ["file1", "file2"], "2 or more data time files"
+        "data", ["file1", "file2", ".."], "2 or more data time files"
     ).add_key_value(
         "times", "file", "Time instance file compatible with previous data"
     ).add_optional_key_value(
@@ -149,28 +146,32 @@ def core_configuration_example(ini_file: str):
 
 # noinspection PyUnresolvedReferences
 def peripheral_configuration_example(ini_file: str):
-    import customs.configuration_extensions
+    import customs.configuration_builder_extensions
 
     ConfigurationBuilder(ini_file).add_section(
         "Input Data", "Section containing the data for the toolbox"
     ).add_key_value(
-        "network", "file", "File containing the list of peripheral genes"
+        "network", "file",
+        "File containing the network file with the list of peripheral genes"
     ).add_key_values(
         "data", ["file1", "file2"], "2 or more data time files"
     ).add_key_value(
         "times", "file", "Time instance file compatible with previous data"
     ).add_optional_key_value(
-        "perturbations", "file", "Value for the perturbations file"
+        "perturbations", "file", "Value for the peripherals' perturbations file"
     ).add_section(
-        "Input Core", "Section containing the data of a completed core"
+        "Core Files", "Section containing the data of a completed core"
     ).add_key_value(
-        "core", "file", "File containing the parameters of the core"
+        "core system", "file", "File containing the parameters of the core"
     ).add_optional_key_value(
         "perturbations", "file", "Value for the perturbations file of the core"
+    ).add_key_value(
+        "y0", "file",
+        "File containing the starting point for each transcription factor"
     ).add_section(
         "Extra", "Extra parameters to use"
     ).add_key_value(
-        "num cores", "1", "Number of cores to use for this task"
+        "num tasks", "1", "Number of parallel tasks to run"
     ).add_optimization_section().add_output_section(
     ).add_logger_section().build()
 

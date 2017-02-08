@@ -62,7 +62,7 @@ def logger_section(config: ConfigurationBuilder) -> ConfigurationBuilder:
     ).add_optional_key_value(
         "log", "file", "Name of the file where to save the logging information"
     ).add_optional_key_value(
-        "verbosity", "False",
+        "verbosity", "True",
         "Set to True in order to increase verbosity of the toolbox"
     )
 
