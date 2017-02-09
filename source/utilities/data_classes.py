@@ -27,7 +27,7 @@ OutputFiles = NamedTuple(
 
 InputExtra = NamedTuple(
     "InputExtra",
-    [("num_tasks", str)]
+    [("num_tasks", int)]
 )
 
 CoreData = NamedTuple(
@@ -44,6 +44,7 @@ PeripheralData = NamedTuple(
 
 PeripheralWithCoreData = NamedTuple(
     "PeripheralWithCoreData",
-    [("peripheral_data", PeripheralData), ("core_pert", Vector),
+    [("peripheral_data", PeripheralData),
+     ("core_data", Vector), ("core_pert", Vector),
      ("y0_combined", Vector), ("num_react", int), ("reactions", SortedDict)]
 )

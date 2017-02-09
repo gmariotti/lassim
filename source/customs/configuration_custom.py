@@ -2,20 +2,43 @@ import json
 import logging
 import os
 from argparse import ArgumentParser
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Callable
 
 import psutil
 
 from core.factories import OptimizationFactory
 from core.lassim_context import OptimizationArgs
 from utilities.configuration import ConfigurationParser, ConfigurationBuilder
-from utilities.data_classes import InputFiles, OutputFiles
+from utilities.data_classes import InputFiles, OutputFiles, CoreFiles, \
+    InputExtra
 from utilities.logger_setup import LoggerSetup
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
 __version__ = "0.3.0"
+
+
+def input_validity_check(files: Dict) -> Dict:
+    logger = logging.getLogger(__name__)
+
+    check_file_validity(files["network"], logger)
+    if len(files["data"]) < 2:
+        logger.error("Expected two or more input files for data.")
+        raise RuntimeError("See log for more information.")
+    for data_file in files["data"]:
+        check_file_validity(data_file, logger)
+    check_file_validity(files["times"], logger)
+
+    logger.info("Network file is {}".format(files["network"]))
+    logger.info("Data file are {}".format(", ".join(files["data"])))
+    logger.info("Time series file is {}".format(files["times"]))
+
+    if files["perturbations"] is not None:
+        check_file_validity(files["perturbations"], logger)
+        logger.info("Perturbations file is {}".format(files["perturbations"]))
+
+    return files
 
 
 def output_conversion(output_dict: Dict):
@@ -83,6 +106,32 @@ def optimization_conversion(optimization_dict: Dict):
     }
 
 
+def extra_conversion(extra_input: Dict):
+    num_tasks = int(extra_input["num tasks"])
+    if num_tasks < 1:
+        raise RuntimeError("number of tasks must be >= 1")
+    return {
+        "num_tasks": num_tasks
+    }
+
+
+def core_input_check(files: Dict):
+    logger = logging.getLogger(__name__)
+    check_file_validity(files["core system"], logger)
+    check_file_validity(files["perturbations"], logger)
+    check_file_validity(files["y0"], logger)
+
+    logger.info("Core System file is {}".format(files["core system"]))
+    logger.info("Core Perturbations file is {}".format(files["perturbations"]))
+    logger.info("Core y0 file is {}".format(files["y0"]))
+
+    return {
+        "core_system": files["core system"],
+        "core_pert": files["perturbations"],
+        "core_y0": files["y0"]
+    }
+
+
 # noinspection PyUnresolvedReferences
 def core_terminal(script_name: str
                   ) -> Tuple[InputFiles, OutputFiles,
@@ -92,14 +141,7 @@ def core_terminal(script_name: str
     logger = logging.getLogger(__name__)
     # parse terminal option
     parser = ArgumentParser(script_name)
-    parser.add_argument("configuration", metavar="file.ini",
-                        help="Some message about configuration")
-    parser.add_argument("-c", "--configuration-helper", action="store_true",
-                        help="TODO")
-    args = parser.parse_args()
-    if getattr(args, "configuration_helper"):
-        core_configuration_example(args.configuration)
-        exit(0)
+    args = default_terminal(parser, core_configuration_example)
 
     config = ConfigurationParser(args.configuration).define_section(
         "Input Data", "network", "data", "times", "perturbations"
@@ -145,6 +187,60 @@ def core_configuration_example(ini_file: str):
 
 
 # noinspection PyUnresolvedReferences
+def peripherals_terminal(script_name: str
+                         ) -> Tuple[ConfigurationParser, InputFiles, CoreFiles,
+                                    OutputFiles, List[OptimizationArgs],
+                                    List[OptimizationArgs], InputExtra]:
+    import customs.configuration_parser_extensions
+
+    logger = logging.getLogger(__name__)
+    parser = ArgumentParser(script_name)
+    args = default_terminal(parser, peripheral_configuration_example)
+
+    config = ConfigurationParser(args.configuration).define_section(
+        "Input Data", "network", "data", "times", "perturbations"
+    ).define_section(
+        "Core Files", "core system", "perturbations", "y0"
+    ).define_section(
+        "Extra", "num tasks"
+    ).define_optimization_section().define_output_section(
+    ).define_logger_section()
+
+    config.parse_logger_section("Logging", LoggerSetup)
+
+    files = config.parse_section("Input Data", InputFiles, input_validity_check)
+    core_files = config.parse_section(
+        "Core Files", CoreFiles, core_input_check
+    )
+    is_pert = False
+    if files.perturbations is not None and core_files.perturbations is not None:
+        is_pert = True
+
+    extra = config.parse_section("Extra", InputExtra, extra_conversion)
+    output = config.parse_section("Output", OutputFiles, output_conversion)
+
+    main_opt = config.parse_section(
+        "Optimization", OptimizationArgs, optimization_conversion
+    )
+    logger.info("Logging Core Optimization arguments...")
+    main_opt.log_args(logger, is_pert)
+
+    return config, files, core_files, output, [main_opt], list(), extra
+
+
+def default_terminal(parser: ArgumentParser, helper: Callable[[str], None]):
+    parser.add_argument("configuration", metavar="file.ini",
+                        help="Some message about configuration")
+    parser.add_argument("-c", "--configuration-helper", action="store_true",
+                        help="TODO")
+    args = parser.parse_args()
+    if getattr(args, "configuration_helper"):
+        helper(args.configuration)
+        exit(0)
+    return args
+
+
+# noinspection PyUnresolvedReferences
 def peripheral_configuration_example(ini_file: str):
     import customs.configuration_builder_extensions
 
@@ -176,28 +272,6 @@ def peripheral_configuration_example(ini_file: str):
     ).add_logger_section().build()
 
     print("Generated configuration file example {}".format(ini_file))
-
-
-def input_validity_check(files: Dict) -> Dict:
-    logger = logging.getLogger(__name__)
-
-    check_file_validity(files["network"], logger)
-    if len(files["data"]) < 2:
-        logger.error("Expected two or more input files for data.")
-        raise RuntimeError("See log for more information.")
-    for data_file in files["data"]:
-        check_file_validity(data_file, logger)
-    check_file_validity(files["times"], logger)
-
-    logger.info("Network file is {}".format(files["network"]))
-    logger.info("Data file are {}".format(", ".join(files["data"])))
-    logger.info("Time series file is {}".format(files["times"]))
-
-    if files["perturbations"] is not None:
-        check_file_validity(files["perturbations"], logger)
-        logger.info("Perturbations file is {}".format(files["perturbations"]))
-
-    return files
 
 
 def check_file_validity(filename: str, logger: logging.Logger):

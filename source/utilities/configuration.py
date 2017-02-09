@@ -121,7 +121,11 @@ class ConfigurationParser(Configuration):
         return self
 
 
-def from_parser_to_builder(parser: ConfigurationParser):
-    builder = ConfigurationBuilder(parser._filename)
+def from_parser_to_builder(parser: ConfigurationParser, filename: str = None
+                           ) -> ConfigurationBuilder:
+    if filename is not None:
+        builder = ConfigurationBuilder(filename)
+    else:
+        builder = ConfigurationBuilder(parser._filename)
     builder._parser = parser._parser
     return builder
