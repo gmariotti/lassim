@@ -14,8 +14,8 @@ from customs.peripherals_functions import default_bounds, \
 from data_management.csv_format import parse_core_data, \
     parse_peripherals_network, parse_perturbations_data, parse_patient_data, \
     parse_time_sequence, parse_y0_data
-from utilities.data_classes import PeripheralsData, InputFiles, InputExtra, \
-    CoreData
+from utilities.data_classes import PeripheralWithCoreData, InputFiles, \
+    CoreFiles, PeripheralData
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
@@ -68,18 +68,19 @@ def get_reactions_from_data(core_data: pd.DataFrame) -> SortedDict:
 
 
 def parse_peripherals_data(network: NetworkSystem, files: InputFiles,
-                           extra: InputExtra, core_data: pd.DataFrame
-                           ) -> Iterable[Tuple[str, PeripheralsData]]:
+                           core_files: CoreFiles, core_data: pd.DataFrame
+                           ) -> Iterable[Tuple[str, PeripheralWithCoreData]]:
     """
     Parses the data for the peripherals. For performance reasons, the method
     returns a generator.
 
     :param network: Instance of NetworkSystem representing the current network.
     :param files: InputFiles to use.
-    :param extra: InputExtra for other options/files.
+    :param core_files: CoreFiles for other options/files related to the
+        core system.
     :param core_data: pandas.DataFrame with the data of the core.
     :return: A generator that produces a tuple containing as first element the
-        name of the gene, and as second element an instance of PeripheralsData
+        name of the gene, and as second element an instance of PeripheralWithCoreData
         with the data for that gene.
     :raise AttributeError: If the transcription factors in the network are not
         the same as the ones in the peripherals data and/or the perturbations
@@ -87,11 +88,11 @@ def parse_peripherals_data(network: NetworkSystem, files: InputFiles,
     """
 
     logger = logging.getLogger(__name__)
-    core_perturbations = parse_perturbations_data(extra.core_pert)
-    gene_datas = [parse_patient_data(filename) for filename in files.data]
+    core_perturbations = parse_perturbations_data(core_files.core_pert)
+    gene_input_data = [parse_patient_data(filename) for filename in files.data]
 
     tfacts = [tfact for tfact in network.core.tfacts]
-    for data in gene_datas:
+    for data in gene_input_data:
         data_tfacts = data.index.values.tolist()
         if tfacts != data_tfacts:
             message = "Transcription factors in the data are different from " \
@@ -108,12 +109,14 @@ def parse_peripherals_data(network: NetworkSystem, files: InputFiles,
     times = parse_time_sequence(files.times)
     for gene, reactions in network.reactions.viewitems():
         try:
-            gene_data, gene_sigma = parse_peripheral_data(gene_datas, gene)
+            # extract the mean and the sigma for the current gene
+            gene_data, gene_sigma = parse_peripheral_data(gene_input_data, gene)
         except KeyError:
             logger.error("Searched for gene {} in data but not found."
                          "Will be skipped".format(gene))
             continue
 
+        # check presence of perturbations
         gene_pert = None
         if genes_perturbations is not None:
             try:
@@ -122,12 +125,15 @@ def parse_peripherals_data(network: NetworkSystem, files: InputFiles,
                 logger.error("Searched for gene {} in perturbations but not "
                              "present. Will be skipped".format(gene))
                 continue
-        y0 = set_ode_y0(gene_data, extra, core_data)
-        cdata = CoreData(
-            gene_data, gene_sigma, times.copy(), core_perturbations.copy(), y0
+        y0_combined, y0_gene = set_ode_y0(gene_data, core_files, core_data)
+        peripheral_data = PeripheralData(
+            gene_data, gene_sigma, times.copy(), gene_pert, y0_gene
         )
-        pdata = PeripheralsData(cdata, gene_pert, 1, len(reactions), reactions)
-        yield gene, pdata
+        per_core_data = PeripheralWithCoreData(
+            peripheral_data, core_data, core_perturbations.copy(),
+            y0_combined, len(reactions), reactions
+        )
+        yield gene, per_core_data
 
 
 def check_genes_perturbations(files: InputFiles, tfacts: List[str]
@@ -192,51 +198,53 @@ def parse_peripheral_data(data_list: List[pd.DataFrame], gene_name: str
     return data_mean, std_dev
 
 
-def set_ode_y0(gene_data: Vector, extra: InputExtra, core_data: pd.DataFrame
-               ) -> Vector:
+def set_ode_y0(gene_data: Vector, core_files: CoreFiles, core_data: pd.DataFrame
+               ) -> Tuple2V:
     """
     Creates a vector with the starting points for the ODE system.
 
     :param gene_data: Vector containing the data for the gene.
-    :param extra: InputExtra instance with the name of the y0 file for the core.
+    :param core_files: CoreFiles instance with the name of the y0 file for the core.
     :param core_data: Data of the core.
     :return: Vector containing the value at time 0 of transcription factors and
         gene in the following way:
         [tf_1,..,tf_n, g]
+        and the value of y0 for the gene.
     """
 
-    core_y0 = parse_y0_data(core_data, extra)
+    core_y0 = parse_y0_data(core_data, core_files.core_y0)
     gene_y0 = gene_data[0]
-    return np.array(core_y0.tolist() + gene_y0.tolist, dtype=Float)
+    y0_combined = np.array(core_y0.tolist() + gene_y0.tolist, dtype=Float)
+    return y0_combined, gene_y0
 
 
-def problem_setup(gene_data: PeripheralsData, context: LassimContext
+def problem_setup(data: PeripheralWithCoreData, context: LassimContext
                   ) -> Tuple[NetworkProblemFactory, NetworkProblem]:
     """
     Function for the setup of the problem. Used for creating the problem
     factory and the starting problem to solve.
 
-    :param gene_data: Instance of PeripheralsData. Should be related to just
+    :param data: Instance of PeripheralWithCoreData. Should be related to just
         a single gene.
     :param context: LassimContext for solving this problem.
     :return: Tuple containing a NetworkProblemFactory instance and a starting
         NetworkProblem instance to solve.
     """
 
-    core_data = gene_data.core_data
+    gene_data = data.peripheral_data
     core_net = context.network.core
-    if core_data.perturb is None:
+    if gene_data.perturb is None:
         factory = NetworkProblemFactory.new_instance(
-            (core_data.data, core_data.sigma, core_data.times),
-            core_data.y0, context.ode
+            (gene_data.data, gene_data.sigma, gene_data.times),
+            data.y0_combined, context.ode
         )
         logging.getLogger(__name__).info(
             "Built factory for problem without perturbations..."
         )
     else:
         factory = NetworkProblemFactory.new_instance(
-            (core_data.data, core_data.sigma, core_data.times,
-             core_data.perturb, gene_data.pert_gene), core_data.y0,
+            (gene_data.data, gene_data.sigma, gene_data.times,
+             gene_data.perturb, data.core_pert), data.y0_combined,
             context.ode, context.perturbation,
             context.primary_first.pert_factor
         )
@@ -245,13 +253,13 @@ def problem_setup(gene_data: PeripheralsData, context: LassimContext
         )
 
     start_problem = factory.build(
-        dim=(gene_data.num_genes * 2 + gene_data.num_react),
-        bounds=default_bounds(gene_data.num_genes, gene_data.num_react),
+        dim=(2 + data.num_react),
+        bounds=default_bounds(1, data.num_react),
         vector_map=generate_reactions_vector(
-            gene_data.reactions, core_data.data
+            data.reactions, data.core_data
         ), core_data=generate_core_vector(
-            core_data.data, core_net.num_tfacts, gene_data.react_count,
-            gene_data.reactions
+            data.core_data, core_net.num_tfacts, data.num_react,
+            data.reactions
         ))
 
     return factory, start_problem

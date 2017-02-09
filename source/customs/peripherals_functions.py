@@ -148,9 +148,13 @@ def generate_reactions_vector(genes_reactions: SortedDict, core_data: Vector,
         vector = np.zeros(num_tf, dtype=dt_react)
         vector[react_set] = np.inf
         reacts.append(vector.tolist())
-    core_reacts_flatten = [val for row in core_data for val in row[2:]]
-    reacts_flatten = [val for sublist in reacts for val in sublist]
-    np_reacts = np.array(core_reacts_flatten + reacts_flatten, dtype=dt_react)
+    core_reacts_flatten = [val for row in core_data
+                           for val in row[2:]]
+    peripheral_reacts_flatten = [val for sublist in reacts
+                                 for val in sublist]
+    np_reacts = np.array(
+        core_reacts_flatten + peripheral_reacts_flatten, dtype=dt_react
+    )
 
     return np_reacts, np_reacts == np.inf
 
