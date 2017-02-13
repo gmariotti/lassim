@@ -205,8 +205,8 @@ class NetworkProblemFactory(LassimProblemFactory):
         NetworkProblem._s_ode_function = ode_function
         # divides data considering presence or not of perturbations data
         if len(cost_data) == 5:
-            NetworkWithPerturbationsProblem._s_pert_core = cost_data[3]
-            NetworkWithPerturbationsProblem._s_pert_data = cost_data[4]
+            NetworkWithPerturbationsProblem._s_pert_data = cost_data[3]
+            NetworkWithPerturbationsProblem._s_pert_core = cost_data[4]
             cost_data = (cost_data[0], cost_data[1], cost_data[2])
         NetworkProblem._s_cost_data = cost_data
         NetworkProblem._s_y0 = y0

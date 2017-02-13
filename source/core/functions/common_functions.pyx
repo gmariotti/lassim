@@ -1,3 +1,4 @@
+# noinspection PyUnresolvedReferences
 cimport cython
 import numpy as np
 from scipy import integrate
