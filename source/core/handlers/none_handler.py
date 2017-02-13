@@ -9,5 +9,5 @@ __version__ = "0.1.0"
 
 
 class NoneSolutionsHandler(SolutionsHandler):
-    def handle_solutions(self, list_of_solutions: SortedList):
+    def handle_solutions(self, solutions: SortedList):
         pass

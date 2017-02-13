@@ -8,9 +8,14 @@ from PyGMO.core import champion
 from nose.tools import assert_list_equal
 from sortedcontainers import SortedList, SortedDict, SortedSet
 
-from core.handlers.serializers.csv_serializer import CSVSerializer
 from core.handlers.csv_handlers import default_filename_creator
+from core.handlers.serializers.csv_serializer import CSVSerializer
 from core.solutions.lassim_solution import LassimSolution
+
+__author__ = "Guido Pio Mariotti"
+__copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
+__license__ = "GNU General Public License v3.0"
+__version__ = "0.3.0"
 
 
 def create_fake_solution(cost: float) -> LassimSolution:

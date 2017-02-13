@@ -19,6 +19,6 @@ class CompositeSolutionsHandler(SolutionsHandler):
     def __init__(self, handlers_list: List[SolutionsHandler]):
         self._handlers = handlers_list
 
-    def handle_solutions(self, list_of_solutions: SortedList):
+    def handle_solutions(self, solutions: SortedList):
         for handler in self._handlers:
-            handler.handle_solutions(list_of_solutions)
+            handler.handle_solutions(solutions)

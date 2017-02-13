@@ -41,6 +41,6 @@ class PlotBestSolutionsHandler(SolutionsHandler):
             directory, fig_names, axis, gres, name_creator
         )
 
-    def handle_solutions(self, list_of_solutions: SortedList):
-        best_solution = list_of_solutions[0]
+    def handle_solutions(self, solutions: SortedList):
+        best_solution = solutions[0]
         self.plot_serializer.serialize_solution(best_solution)

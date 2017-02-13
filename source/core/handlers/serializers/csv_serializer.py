@@ -7,12 +7,12 @@ from sortedcontainers import SortedList
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
 __license__ = "GNU General Public License v3.0"
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 
 class CSVSerializer:
     """
-    This class represents a serializer of solutions in a csv formatted file.
+    This class represents a serializer for solutions as csv formatted files.
     """
 
     def __init__(self, directory: str, n_print: int, headers: List[str],
@@ -65,7 +65,7 @@ class CSVSerializer:
             )
         num_solutions_to_print = min(len(solutions), self._num)
         with open(self._directory + "/" + filename, "w") as output:
-            for i in range(0, num_solutions_to_print):
+            for i in range(num_solutions_to_print):
                 solution = solutions[i]
                 s_matrix = solution.get_solution_matrix(headers=self._headers)
                 output.write(s_matrix.to_csv(sep=self._separator, index=False))
