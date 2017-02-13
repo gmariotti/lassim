@@ -1,5 +1,5 @@
 import logging
-from typing import Tuple, List
+from typing import Tuple, List, Callable
 
 import numpy as np
 import pandas as pd
@@ -8,6 +8,7 @@ from PyGMO import topology
 from core.factories import OptimizationFactory
 from core.functions.common_functions import odeint1e8_lassim
 from core.functions.perturbation_functions import perturbation_peripherals
+from core.handlers.csv_handlers import DirectoryCSVSolutionsHandler
 from core.lassim_context import LassimContext, OptimizationArgs
 from core.solutions.lassim_solution import LassimSolution
 from customs.configuration_custom import peripherals_terminal
@@ -52,13 +53,26 @@ def peripherals_job(files: InputFiles, core_files: CoreFiles,
         context.primary_first.type,
         iter_function(core_data, core.num_tfacts, core.react_count)
     )
+    headers = ["lambda", "vmax"] + [tfact for tfact in core.tfacts]
+
+    def dirname_creator(name: str) -> Callable[[int, int], str]:
+        # def wrapper(num_solutions: int, num_variables: int) -> str:
+        #     return "{}_{}_vars_top{}".format(
+        #         name, num_solutions, num_variables
+        #     )
+        return lambda x, y: "{}_{}_vars_top{}".format(name, x, y)
+
     # optimize independently for each gene
     # Python sucks, so I can't do this in parallel
     # may Kotlin and Java replace Python in the future
     for gene, gene_data in peripherals_data_generator:
+
         prob_factory, start_problem = problem_setup(gene_data, context)
 
-        # TODO - constructions of the handlers for the solutions
+        handler = DirectoryCSVSolutionsHandler(
+            output.directory, output.num_solutions, headers,
+            dirname_creator(gene)
+        )
 
         optimization = optimization_builder.build(
             context, prob_factory, start_problem, gene_data.reactions,
@@ -66,6 +80,7 @@ def peripherals_job(files: InputFiles, core_files: CoreFiles,
         )
         solutions = optimization.solve(topol=topology.ring())
         # TODO - handler for final solution
+        # save the best one in a gene specific directory
 
 
 def prepare_peripherals_job(config: ConfigurationParser, files: InputFiles,
@@ -98,6 +113,8 @@ def start_jobs(network_files: List[str], config_files: List[str]):
 
     # process = subprocess.Popen([commands])
     # process.wait()
+    # for each best directory, take the best file and merge it with the best
+    # from the other genes
     pass
 
 

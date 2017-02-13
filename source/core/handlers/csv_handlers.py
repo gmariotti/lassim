@@ -46,11 +46,22 @@ class DirectoryCSVSolutionsHandler(SolutionsHandler):
 
     def __init__(self, output_dir: str, num_solutions: int, headers: List[str],
                  dirname_creator: Callable[[int, int], str] =
-                 default_dirname_creator,
-                 filename_creator: Callable[[int, int], str]
-                 = None):
+                 default_dirname_creator):
+        """
+        Object for saving a list of solutions as independent CSV files in their
+        own directory. The directory can be generated thanks to a name creator
+        function or passed as input.
+
+        :param output_dir: The name of the main directory where the generated
+            folders will go.
+        :param num_solutions: Number of solutions to print for each list.
+        :param headers: Headers for the CSV file.
+        :param dirname_creator: Function that given as input the number of
+            variables of a solution and the number of solutions to print, it
+            generates a valid directory name.
+        """
         self._serializer = CSVSerializer.new_instance(
-            output_dir, 1, headers, filename_creator
+            output_dir, 1, headers, None
         )
         self._dirname_creator = dirname_creator
         self._directory = output_dir

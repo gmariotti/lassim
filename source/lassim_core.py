@@ -8,7 +8,8 @@ from sortedcontainers import SortedDict
 from core.functions.common_functions import odeint1e8_lassim
 from core.functions.perturbation_functions import perturbation_func_sequential
 from core.handlers.composite_handler import CompositeSolutionsHandler
-from core.handlers.csv_handlers import SimpleCSVSolutionsHandler
+from core.handlers.csv_handlers import SimpleCSVSolutionsHandler, \
+    DirectoryCSVSolutionsHandler
 from core.handlers.plot_handler import PlotBestSolutionsHandler
 from core.lassim_context import LassimContext
 from core.solutions.lassim_solution import LassimSolution
@@ -90,10 +91,10 @@ def lassim_core():
     )
     # list of solutions from solving the problem
     solutions = optimization.solve(topol=topology.ring())
-    final_handler = SimpleCSVSolutionsHandler(
+    final_handler = DirectoryCSVSolutionsHandler(
         output.directory, float("inf"), headers
     )
-    final_handler.handle_solutions(solutions, "best_solutions.csv")
+    final_handler.handle_solutions(solutions, "best_solutions")
 
 
 if __name__ == "__main__":
