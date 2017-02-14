@@ -94,7 +94,7 @@ def lassim_core():
     final_handler = DirectoryCSVSolutionsHandler(
         output.directory, float("inf"), headers
     )
-    final_handler.handle_solutions(solutions, "best_solutions")
+    final_handler.handle_solutions(solutions, dirname="best_solutions")
 
 
 if __name__ == "__main__":

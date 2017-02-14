@@ -62,9 +62,13 @@ def peripherals_job(files: InputFiles, core_files: CoreFiles,
         #     )
         return lambda x, y: "{}_{}_vars_top{}".format(name, x, y)
 
-    # optimize independently for each gene
-    # Python sucks, so I can't do this in parallel
+    final_handler = DirectoryCSVSolutionsHandler(
+        output.directory, float("inf"), headers
+    )
+    best_genes_solutions = []
     # may Kotlin and Java replace Python in the future
+    # Python sucks, so I can't do this in parallel
+    # optimize independently for each gene
     for gene, gene_data in peripherals_data_generator:
 
         prob_factory, start_problem = problem_setup(gene_data, context)
@@ -79,8 +83,10 @@ def peripherals_job(files: InputFiles, core_files: CoreFiles,
             handler, logging.getLogger(__name__)
         )
         solutions = optimization.solve(topol=topology.ring())
-        # TODO - handler for final solution
+
         # save the best one in a gene specific directory
+        final_handler.handle_solutions(solutions, "{}_best".format(gene))
+        best_genes_solutions.append(solutions[0])
 
 
 def prepare_peripherals_job(config: ConfigurationParser, files: InputFiles,
