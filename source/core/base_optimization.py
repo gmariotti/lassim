@@ -5,9 +5,9 @@ from typing import Callable, Tuple, Optional
 from PyGMO import topology, archipelago, island
 from sortedcontainers import SortedDict, SortedList
 
+from core.base_solution import BaseSolution
 from core.lassim_context import LassimContext, OptimizationArgs
 from core.lassim_problem import LassimProblem, LassimProblemFactory
-from core.solutions.lassim_solution import LassimSolution
 from core.solutions_handler import SolutionsHandler
 
 __author__ = "Guido Pio Mariotti"
@@ -157,7 +157,7 @@ class BaseOptimization:
             return solutions
 
     def _generate_solution(self, prob: LassimProblem, reactions: SortedDict,
-                           topol) -> LassimSolution:
+                           topol) -> BaseSolution:
         """
         Creates a new archipelago to solve the problem with the algorithm passed
         as argument, it solve it, pass the list of solutions to the handler and

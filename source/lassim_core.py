@@ -12,9 +12,10 @@ from core.handlers.csv_handlers import SimpleCSVSolutionsHandler, \
     DirectoryCSVSolutionsHandler
 from core.handlers.plot_handler import PlotBestSolutionsHandler
 from core.lassim_context import LassimContext
-from core.solutions.lassim_solution import LassimSolution
+from core.solutions.core_solution import CoreSolution
 from core.utilities.type_aliases import Tuple3V
-from customs.configuration_custom import core_terminal
+from customs.configuration_custom import parse_core_config, default_terminal, \
+    core_configuration_example
 from customs.core_creation import create_core, problem_setup, \
     optimization_setup
 
@@ -31,14 +32,14 @@ __version__ = "0.3.0"
 
 
 def data_producer(context: LassimContext, data_tuple: NamedTuple
-                  ) -> Callable[[LassimSolution], Iterable[Tuple3V]]:
+                  ) -> Callable[[CoreSolution], Iterable[Tuple3V]]:
     ode_function = context.ode
     y0 = data_tuple.y0
     time = data_tuple.times
     data = data_tuple.data
     result = np.empty(y0.size)
 
-    def wrapper(solution: LassimSolution) -> Iterable[Tuple3V]:
+    def wrapper(solution: CoreSolution) -> Iterable[Tuple3V]:
         results = ode_function(
             y0, time, solution.solution_vector, solution.react_vect,
             solution.react_mask, y0.size, result
@@ -54,13 +55,13 @@ def lassim_core():
     script_name = "lassim_core"
 
     # arguments from terminal are parsed
-    # files, output, main_args, sec_args = lassim_core_terminal(script_name)
-    files, output, main_args, sec_args = core_terminal(script_name)
+    args = default_terminal(script_name, core_configuration_example)
+    files, output, main_args, sec_args = parse_core_config(args)
     core = create_core(files.network)
     # creates a context for solving this problem
     context = LassimContext(
         core, main_args, odeint1e8_lassim, perturbation_func_sequential,
-        LassimSolution, sec_args
+        CoreSolution, sec_args
     )
     # returns a namedtuple with the data parsed and the factory for the problem
     # construction

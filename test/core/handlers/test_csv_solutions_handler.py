@@ -10,7 +10,7 @@ from sortedcontainers import SortedDict, SortedList, SortedSet
 
 from core.handlers.csv_handlers import DirectoryCSVSolutionsHandler, \
     serialize_solution, SimpleCSVSolutionsHandler
-from core.solutions.lassim_solution import LassimSolution
+from core.solutions.core_solution import CoreSolution
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"
@@ -18,7 +18,7 @@ __license__ = "GNU General Public License v3.0"
 __version__ = "0.3.0"
 
 
-def create_fake_solution(cost: float) -> LassimSolution:
+def create_fake_solution(cost: float) -> CoreSolution:
     # first six values are lambdas and vmax
     fake_champion = champion()
     fake_champion.x = (1, 1.5, 0, 2, 2.5, 5, 1, 1, 1)
@@ -34,7 +34,7 @@ def create_fake_solution(cost: float) -> LassimSolution:
     # too lazy to create an entire CoreProblem
     FakeProblem = namedtuple("FakeProblem", ["vector_map", "vector_map_mask"])
 
-    return LassimSolution(
+    return CoreSolution(
         fake_champion, fake_reactions,
         FakeProblem(fake_k_react[0], fake_k_react[1])
     )

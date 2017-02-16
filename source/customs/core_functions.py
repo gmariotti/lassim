@@ -6,7 +6,7 @@ import numpy as np
 from sortedcontainers import SortedDict
 
 from core.problems.core_problem import CoreProblemFactory, CoreProblem
-from core.solutions.lassim_solution import LassimSolution
+from core.solutions.core_solution import CoreSolution
 from core.utilities.type_aliases import Vector, Float, Tuple2V
 
 __author__ = "Guido Pio Mariotti"
@@ -106,7 +106,7 @@ def remove_lowest_reaction(vres: Vector, reactions: SortedDict
     raise IndexError("Index {} to remove not found!!".format(min_index))
 
 
-def iter_function(factory: CoreProblemFactory, solution: LassimSolution
+def iter_function(factory: CoreProblemFactory, solution: CoreSolution
                   ) -> Tuple[Optional[CoreProblem], SortedDict, bool]:
     """
     Custom function for performing an iteration after a completed optimization
