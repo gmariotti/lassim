@@ -1,17 +1,20 @@
 import logging
+import os
 from typing import Tuple, List, Callable
 
 import numpy as np
 import pandas as pd
 from PyGMO import topology
+from sortedcontainers import SortedList
 
 from core.factories import OptimizationFactory
 from core.functions.common_functions import odeint1e8_lassim
 from core.functions.perturbation_functions import perturbation_peripherals
 from core.handlers.csv_handlers import DirectoryCSVSolutionsHandler
 from core.lassim_context import LassimContext, OptimizationArgs
-from core.solutions.lassim_solution import LassimSolution
-from customs.configuration_custom import peripherals_terminal
+from core.solutions.peripheral_solution import PeripheralSolution
+from customs.configuration_custom import parse_peripherals_config, \
+    default_terminal, peripheral_configuration_example
 from customs.peripherals_creation import create_network, problem_setup, \
     parse_peripherals_data
 from customs.peripherals_functions import iter_function
@@ -33,14 +36,15 @@ __version__ = "0.3.0"
 
 def peripherals_job(files: InputFiles, core_files: CoreFiles,
                     output: OutputFiles, main_args: List[OptimizationArgs],
-                    sec_args: List[OptimizationArgs]):
+                    sec_args: List[OptimizationArgs]
+                    ) -> Tuple[List[PeripheralSolution], List[str]]:
     # from the file corresponding to the core system, create the CoreSystem and
     # its values, then build the corresponding NetworkSystem
     network = create_network(files.network, core_files.core_system)
     core = network.core
     context = LassimContext(
         network, main_args, odeint1e8_lassim, perturbation_peripherals,
-        LassimSolution, sec_args
+        PeripheralSolution, sec_args
     )
     # parse the peripherals data just once, in order to improve the performance
     # and return a dictionary of <gene:DataTuple> to use for starting the
@@ -53,14 +57,16 @@ def peripherals_job(files: InputFiles, core_files: CoreFiles,
         context.primary_first.type,
         iter_function(core_data, core.num_tfacts, core.react_count)
     )
-    headers = ["lambda", "vmax"] + [tfact for tfact in core.tfacts]
+    headers = ["source", "lambda", "vmax"] + [tfact for tfact in core.tfacts]
 
-    def dirname_creator(name: str) -> Callable[[int, int], str]:
+    def dirname_creator(name: str) -> Callable[[SortedList, int], str]:
         # def wrapper(num_solutions: int, num_variables: int) -> str:
         #     return "{}_{}_vars_top{}".format(
         #         name, num_solutions, num_variables
         #     )
-        return lambda x, y: "{}_{}_vars_top{}".format(name, x, y)
+        return lambda x, y: "{}_{}_vars_top{}".format(
+            name, x[0].number_of_variables, y
+        )
 
     final_handler = DirectoryCSVSolutionsHandler(
         output.directory, float("inf"), headers
@@ -72,7 +78,7 @@ def peripherals_job(files: InputFiles, core_files: CoreFiles,
     for gene, gene_data in peripherals_data_generator:
 
         prob_factory, start_problem = problem_setup(gene_data, context)
-
+        PeripheralSolution._get_gene_name = lambda x: gene
         handler = DirectoryCSVSolutionsHandler(
             output.directory, output.num_solutions, headers,
             dirname_creator(gene)
@@ -87,6 +93,7 @@ def peripherals_job(files: InputFiles, core_files: CoreFiles,
         # save the best one in a gene specific directory
         final_handler.handle_solutions(solutions, "{}_best".format(gene))
         best_genes_solutions.append(solutions[0])
+    return best_genes_solutions, headers
 
 
 def prepare_peripherals_job(config: ConfigurationParser, files: InputFiles,
@@ -101,8 +108,8 @@ def prepare_peripherals_job(config: ConfigurationParser, files: InputFiles,
     temp_file = ".lassim_hidden_temp_peripherals_{}.csv"
     temp_config = ".lassim_hidden_temp_config_{}.ini"
     network_subsets = np.array_split(network_frame, num_tasks)
-    list_config = [temp_config.format(i) for i in range(0, num_tasks)]
-    list_files = [temp_file.format(i) for i in range(0, num_tasks)]
+    list_config = [temp_config.format(i) for i in range(num_tasks)]
+    list_files = [temp_file.format(i) for i in range(num_tasks)]
     for i in range(num_tasks):
         task_config = from_parser_to_builder(config, list_config[i])
         task_config.add_section("Input Data").add_key_value(
@@ -127,19 +134,43 @@ def start_jobs(network_files: List[str], config_files: List[str]):
 def lassim_peripherals():
     script_name = "lassim_peripherals"
     # read terminal arguments
+    args = default_terminal(script_name, peripheral_configuration_example)
+
     # extra argument for this script are: name for output file
     config, files, core_files, output, main_args, sec_args, extra = \
-        peripherals_terminal(script_name)
+        parse_peripherals_config(args)
 
     if extra.num_tasks == 1:
-        peripherals_job(files, core_files, output, main_args, sec_args)
+        solutions, headers = peripherals_job(
+            files, core_files, output, main_args, sec_args
+        )
+        # each solution is the solution for a single gene.
+        # merges them into a DataFrame and saves them into the network.csv
+        # file for the main process.
+        result = pd.concat([solution.get_solution_matrix(headers)
+                            for solution in solutions],
+                           ignore_index=True)
+        result.to_csv(files.network, sep="\t", index=False)
     else:
         network_files, config_files = prepare_peripherals_job(
             config, files, core_files, extra.num_tasks
         )
         start_jobs(network_files, config_files)
-        # TODO - merge
-        # TODO - cleaning
+
+        # merging phase
+        results = []
+        for file in network_files:
+            results.append(pd.read_csv(file, sep="\t"))
+        merged_result = pd.concat(results, ignore_index=True)
+        filename = "network_solution.csv"
+        merged_result.to_csv(filename, sep="\t", index=False)
+        logging.getLogger(__name__).info("Generated file {}".format(filename))
+
+        # cleaning
+        for file in network_files:
+            os.remove(file)
+        for config_file in config_files:
+            os.remove(config_file)
 
 
 if __name__ == '__main__':

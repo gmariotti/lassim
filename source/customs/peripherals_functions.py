@@ -6,7 +6,7 @@ import numpy as np
 from sortedcontainers import SortedDict
 
 from core.problems.network_problem import NetworkProblemFactory, NetworkProblem
-from core.solutions.lassim_solution import LassimSolution
+from core.solutions.peripheral_solution import PeripheralSolution
 from core.utilities.type_aliases import Vector, Tuple2V, Float
 
 __author__ = "Guido Pio Mariotti"
@@ -160,7 +160,7 @@ def generate_reactions_vector(genes_reactions: SortedDict, core_data: Vector,
 
 
 def iter_function(core_data: Vector, num_tf: int, num_core_react: int
-                  ) -> Callable[[NetworkProblemFactory, LassimSolution],
+                  ) -> Callable[[NetworkProblemFactory, PeripheralSolution],
                                 Tuple[Optional[NetworkProblem],
                                       SortedDict, bool]]:
     """
@@ -178,10 +178,10 @@ def iter_function(core_data: Vector, num_tf: int, num_core_react: int
     :param num_tf: Number of transcription factors in the core.
     :param num_core_react: Number of reactions in the core.
     :return: Iteration function that accept as input a NetworkProblemFactory and
-        the LassimSolution to evaluate.
+        the PeripheralSolution to evaluate.
     """
 
-    def wrapper(factory: NetworkProblemFactory, solution: LassimSolution
+    def wrapper(factory: NetworkProblemFactory, solution: PeripheralSolution
                 ) -> Tuple[Optional[NetworkProblem], SortedDict, bool]:
         react_mask = solution.react_mask
         if react_mask[react_mask].size > 0:

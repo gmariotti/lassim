@@ -43,6 +43,7 @@ def create_fake_solution(cost: float) -> PeripheralSolution:
 class TestPeripheralSolution(TestCase):
     def setUp(self):
         self.default_function = PeripheralSolution._get_gene_name
+        self.headers = ["source", "lambda", "vmax", "TF1", "TF2", "TF3"]
 
     def tearDown(self):
         PeripheralSolution._get_gene_name = self.default_function
@@ -69,7 +70,26 @@ class TestPeripheralSolution(TestCase):
         PeripheralSolution._get_gene_name = lambda x: "gene"
         solution = create_fake_solution(10)
         data = np.array(["gene", 1.0, 1.5, 10.0, 0.0, 21.0])
-        headers = ["source", "lambda", "vmax", "TF1", "TF2", "TF3"]
-        expected = pd.Series(data, headers).to_frame().transpose()
-        actual = solution.get_solution_matrix(headers)
+        expected = pd.Series(data, self.headers).to_frame().transpose()
+        actual = solution.get_solution_matrix(self.headers)
+        pdt.assert_frame_equal(expected, actual)
+
+    def test_JoinMultipleSolutions(self):
+        PeripheralSolution._get_gene_name = lambda x: "gene1"
+        solution1 = create_fake_solution(10)
+        PeripheralSolution._get_gene_name = lambda x: "gene2"
+        solution2 = create_fake_solution(10)
+        PeripheralSolution._get_gene_name = lambda x: "gene3"
+        solution3 = create_fake_solution(10)
+
+        expected = pd.DataFrame(
+            data=np.array([["gene1", 1.0, 1.5, 10.0, 0.0, 21.0],
+                           ["gene2", 1.0, 1.5, 10.0, 0.0, 21.0],
+                           ["gene3", 1.0, 1.5, 10.0, 0.0, 21.0]]),
+            columns=self.headers
+        )
+        actual = pd.concat([solution1.get_solution_matrix(self.headers),
+                            solution2.get_solution_matrix(self.headers),
+                            solution3.get_solution_matrix(self.headers)],
+                           ignore_index=True)
         pdt.assert_frame_equal(expected, actual)

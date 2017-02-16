@@ -133,15 +133,12 @@ def core_input_check(files: Dict):
 
 
 # noinspection PyUnresolvedReferences
-def core_terminal(script_name: str
-                  ) -> Tuple[InputFiles, OutputFiles,
-                             List[OptimizationArgs], List[OptimizationArgs]]:
+def parse_core_config(args) -> Tuple[InputFiles, OutputFiles,
+                                     List[OptimizationArgs],
+                                     List[OptimizationArgs]]:
     import customs.configuration_parser_extensions
 
     logger = logging.getLogger(__name__)
-    # parse terminal option
-    parser = ArgumentParser(script_name)
-    args = default_terminal(parser, core_configuration_example)
 
     config = ConfigurationParser(args.configuration).define_section(
         "Input Data", "network", "data", "times", "perturbations"
@@ -187,15 +184,13 @@ def core_configuration_example(ini_file: str):
 
 
 # noinspection PyUnresolvedReferences
-def peripherals_terminal(script_name: str
-                         ) -> Tuple[ConfigurationParser, InputFiles, CoreFiles,
-                                    OutputFiles, List[OptimizationArgs],
-                                    List[OptimizationArgs], InputExtra]:
+def parse_peripherals_config(args) -> Tuple[ConfigurationParser, InputFiles,
+                                            CoreFiles, OutputFiles,
+                                            List[OptimizationArgs],
+                                            List[OptimizationArgs], InputExtra]:
     import customs.configuration_parser_extensions
 
     logger = logging.getLogger(__name__)
-    parser = ArgumentParser(script_name)
-    args = default_terminal(parser, peripheral_configuration_example)
 
     config = ConfigurationParser(args.configuration).define_section(
         "Input Data", "network", "data", "times", "perturbations"
@@ -228,7 +223,8 @@ def peripherals_terminal(script_name: str
     return config, files, core_files, output, [main_opt], list(), extra
 
 
-def default_terminal(parser: ArgumentParser, helper: Callable[[str], None]):
+def default_terminal(name: str, helper: Callable[[str], None]):
+    parser = ArgumentParser(name)
     parser.add_argument("configuration", metavar="file.ini",
                         help="Some message about configuration")
     parser.add_argument("-c", "--configuration-helper", action="store_true",
