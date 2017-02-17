@@ -75,7 +75,7 @@ def lassim_core():
 
     # list of headers that will be used in each solution
     tfacts = [tfact for tfact in core.tfacts]
-    headers = ["lambda", "vmax"] + tfacts
+    headers = ["y0", "lambda", "vmax"] + tfacts
     csv_handler = SimpleCSVSolutionsHandler(
         output.directory, output.num_solutions, headers
     )
@@ -96,6 +96,7 @@ def lassim_core():
         output.directory, float("inf"), headers
     )
     final_handler.handle_solutions(solutions, dirname="best_solutions")
+    # FIXME - save best solution by name
 
 
 if __name__ == "__main__":

@@ -22,7 +22,7 @@ CoreFiles = NamedTuple(
 
 OutputFiles = NamedTuple(
     "OutputFiles",
-    [("directory", str), ("num_solutions", int)]
+    [("directory", str), ("num_solutions", int), ("filename", str)]
 )
 
 InputExtra = NamedTuple(

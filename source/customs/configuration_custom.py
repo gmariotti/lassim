@@ -55,13 +55,19 @@ def output_conversion(output_dict: Dict):
             logger.error("Number of solutions must be greater than one.")
             num_solutions = 1
 
+    # FIXME change it
+    output_filename = "best_result.csv"
+    if output_dict["best result"] is not None:
+        output_filename = output_dict["best result"]
+
     logger.info("Number of solutions saved for each iteration is {}".format(
         num_solutions
     ))
 
     return {
         "directory": directory,
-        "num_solutions": int(output_dict["num solutions"])
+        "num_solutions": int(output_dict["num solutions"]),
+        "filename": output_filename
     }
 
 

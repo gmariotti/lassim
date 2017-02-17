@@ -18,7 +18,7 @@ ConfigurationParser.define_optimization_section = optimization_section
 
 def output_section(config: ConfigurationParser):
     return config.define_section(
-        "Output", "directory", "num solutions"
+        "Output", "directory", "num solutions", "best result"
     )
 
 

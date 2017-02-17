@@ -1,5 +1,6 @@
 import logging
 import os
+import subprocess
 from typing import Tuple, List, Callable
 
 import numpy as np
@@ -114,21 +115,42 @@ def prepare_peripherals_job(config: ConfigurationParser, files: InputFiles,
         task_config = from_parser_to_builder(config, list_config[i])
         task_config.add_section("Input Data").add_key_value(
             "network", list_files[i]
+        ).add_section("Output").add_key_value(
+            "best result", list_files[i]
         ).build()
         network_subsets[i].to_csv(list_files[i], sep="\t", index=False)
     return list_files, list_config
 
 
-def start_jobs(network_files: List[str], config_files: List[str]):
+def start_jobs(config_files: List[str]):
     # For each network file a new set of command line options must be created.
     # If a log file is used, maybe each process should have it independent
     # version.
 
-    # process = subprocess.Popen([commands])
-    # process.wait()
-    # for each best directory, take the best file and merge it with the best
-    # from the other genes
-    pass
+    processes = []
+    for config in config_files:
+        process = subprocess.Popen(["lassim_peripherals.py", config])
+        processes.append(process)
+    for process in processes:
+        process.wait()
+
+
+def merge_results(network_files: List[str], output_filename: str):
+    results = []
+    for file in network_files:
+        results.append(pd.read_csv(file, sep="\t"))
+    merged_result = pd.concat(results, ignore_index=True)
+    merged_result.to_csv(output_filename, sep="\t", index=False)
+    logging.getLogger(__name__).info(
+        "Generated file {}".format(output_filename)
+    )
+
+
+def cleaning_temps(config_files, network_files):
+    for file in network_files:
+        os.remove(file)
+    for config_file in config_files:
+        os.remove(config_file)
 
 
 def lassim_peripherals():
@@ -150,27 +172,14 @@ def lassim_peripherals():
         result = pd.concat([solution.get_solution_matrix(headers)
                             for solution in solutions],
                            ignore_index=True)
-        result.to_csv(files.network, sep="\t", index=False)
+        result.to_csv(output.filename, sep="\t", index=False)
     else:
         network_files, config_files = prepare_peripherals_job(
             config, files, core_files, extra.num_tasks
         )
-        start_jobs(network_files, config_files)
-
-        # merging phase
-        results = []
-        for file in network_files:
-            results.append(pd.read_csv(file, sep="\t"))
-        merged_result = pd.concat(results, ignore_index=True)
-        filename = "network_solution.csv"
-        merged_result.to_csv(filename, sep="\t", index=False)
-        logging.getLogger(__name__).info("Generated file {}".format(filename))
-
-        # cleaning
-        for file in network_files:
-            os.remove(file)
-        for config_file in config_files:
-            os.remove(config_file)
+        start_jobs(config_files)
+        merge_results(network_files, output.filename)
+        cleaning_temps(config_files, network_files)
 
 
 if __name__ == '__main__':

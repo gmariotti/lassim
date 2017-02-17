@@ -54,7 +54,7 @@ class TestCoreFunctions(TestCase):
         self.fake_champion.f = (0.99,)
         # too lazy to create an entire CoreProblem
         self.FakeProblem = namedtuple("FakeProblem",
-                                      ["vector_map", "vector_map_mask"])
+                                      ["vector_map", "vector_map_mask", "y0"])
 
     def test_DefaultBounds(self):
         expected = ([0.0, 0.0, 0.0, 0.0, -20.0, -20.0],
@@ -116,7 +116,8 @@ class TestCoreFunctions(TestCase):
         solution = CoreSolution(
             self.fake_champion, self.fake_reactions,
             self.FakeProblem(np.linspace(0, 10, 9),
-                             np.array([False for _ in range(0, 9)]))
+                             np.array([False for _ in range(0, 9)]),
+                             np.linspace(0, 10))
         )
         new_problem, new_reactions, iteration = iter_function(
             self.factory, solution

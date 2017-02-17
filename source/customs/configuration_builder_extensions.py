@@ -50,6 +50,9 @@ def output_section(config: ConfigurationBuilder) -> ConfigurationBuilder:
         "directory", "dir", "Directory where to put the solutions"
     ).add_optional_key_value(
         "num solutions", "1", "Number of solutions to save for each iteration"
+    ).add_optional_key_value(
+        "best result", "file",
+        "Name of the file where to save the best optimization solution"
     )
 
 

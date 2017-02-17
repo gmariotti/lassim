@@ -23,6 +23,7 @@ class CoreSolution(BaseSolution):
                  prob: CoreProblem):
         super(CoreSolution, self).__init__(champ, react_ids, prob)
         self.react_vect, self.react_mask = prob.vector_map, prob.vector_map_mask
+        self.y0 = prob.y0
 
     def get_solution_matrix(self, headers: List[str]) -> pd.DataFrame:
         """
@@ -37,11 +38,14 @@ class CoreSolution(BaseSolution):
         num_tfacts = len(self.reactions_ids.keys())
         lambdas = np.transpose([self._solution[:num_tfacts]])
         vmax = np.transpose([self._solution[num_tfacts: 2 * num_tfacts]])
+        y0 = np.transpose([self.y0])
         react_vect = self.react_vect.copy()
         react_vect[self.react_mask] = self._solution[2 * num_tfacts:]
         react_vect = np.reshape(react_vect, (num_tfacts, num_tfacts))
         lambdas_vmax = np.append(lambdas, vmax, axis=1)
-        matrix = np.append(lambdas_vmax, react_vect, axis=1)
+        matrix = np.append(
+            np.append(y0, lambdas_vmax, axis=1), react_vect, axis=1
+        )
         return pd.DataFrame(data=matrix, columns=headers)
 
     def __ge__(self, other: 'CoreSolution'): return self.cost >= other.cost

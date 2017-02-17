@@ -56,7 +56,7 @@ class CoreProblem(LassimProblem):
 
         # set parameters for objective function
         self._data, self._sigma, self._time = CoreProblem._s_cost_data
-        self._y0 = CoreProblem._s_y0
+        self.y0 = CoreProblem._s_y0
 
         # check that data and sigma are compatible
         try:
@@ -92,7 +92,7 @@ class CoreProblem(LassimProblem):
 
         solution_vector = np.fromiter(x, dtype=Float)
         results = CoreProblem._s_ode_function(
-            self._y0, self._time, solution_vector,
+            self.y0, self._time, solution_vector,
             self.vector_map, self.vector_map_mask, self._size, self._result_mem
         )
         norm_results = np.divide(results, np.amax(results, axis=0))
@@ -162,7 +162,7 @@ class CoreWithPerturbationsProblem(CoreProblem):
         cost = super(CoreWithPerturbationsProblem, self)._objfun_impl(x)[0]
         sol_vector = np.asfortranarray(np.fromiter(x, dtype=Float))
         pert_cost = CoreWithPerturbationsProblem._s_pert_function(
-            self._pdata, self._size, self._y0, sol_vector,
+            self._pdata, self._size, self.y0, sol_vector,
             self.vector_map, self.vector_map_mask, CoreProblem._s_ode_function
         )
 
