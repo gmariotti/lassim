@@ -14,9 +14,9 @@ cpdef double perturbation_func_sequential(np.ndarray[double, ndim=2] pert_data,
                                           np.ndarray[double] vector_map,
                                           np.ndarray vector_map_mask, ode)
 
-cpdef double perturbation_peripherals(np.ndarray[double] pert_data, int size,
-                                      np.ndarray[double] y0,
-                                      np.ndarray[double] sol_vector,
-                                      np.ndarray[double, ndim=2] pert_core,
-                                      np.ndarray[double] vector_map,
-                                      np.ndarray vector_map_mask, ode)
+cpdef double perturbation_peripheral(np.ndarray[double] pert_data, int size,
+                                     np.ndarray[double] y0,
+                                     np.ndarray[double] sol_vector,
+                                     np.ndarray[double, ndim=2] pert_core,
+                                     np.ndarray[double] vector_map,
+                                     np.ndarray vector_map_mask, ode)

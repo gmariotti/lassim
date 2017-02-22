@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from PyGMO.core import champion
 from sortedcontainers import SortedDict
+from sortedcontainers import SortedSet
 
 from core.base_solution import BaseSolution
 from core.problems.network_problem import NetworkProblem
@@ -38,8 +39,9 @@ class PeripheralSolution(BaseSolution):
         # the number of transcription factors is equal to the number of columns
         # minus lambda and vmax
         num_tfacts = len(headers) - 3
-        assert self.react_vect.shape[0] / num_tfacts == \
-               int(self.react_mask.shape[0] / num_tfacts)
+        # FIXME
+        # assert self.react_vect.shape[0] / num_tfacts == \
+        #        int(self.react_mask.shape[0] / num_tfacts)
         p_lambda = self.solution_vector[0]
         p_vmax = self.solution_vector[1]
         p_react = self.react_vect[num_tfacts * num_tfacts:].copy()
@@ -49,6 +51,11 @@ class PeripheralSolution(BaseSolution):
         matrix = np.append(p_lambda_vmax, p_react)
         # FIXME - change DataFrame creation
         return pd.Series(data=matrix, index=headers).to_frame().transpose()
+
+    @property
+    def reactions_ids(self) -> SortedSet:
+        # FIXME - don't override a SortedDict property with a SortedSet
+        return self.reactions_ids[self.gene_name]
 
     def _get_gene_name(self):
         raise RuntimeError("Monkey patch it!")

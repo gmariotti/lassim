@@ -1,6 +1,6 @@
 from typing import NamedTuple, List
 
-from sortedcontainers import SortedDict
+from sortedcontainers import SortedSet
 
 from core.utilities.type_aliases import Vector
 
@@ -46,5 +46,5 @@ PeripheralWithCoreData = NamedTuple(
     "PeripheralWithCoreData",
     [("peripheral_data", PeripheralData),
      ("core_data", Vector), ("core_pert", Vector),
-     ("y0_combined", Vector), ("num_react", int), ("reactions", SortedDict)]
+     ("y0_combined", Vector), ("num_react", int), ("reactions", SortedSet)]
 )

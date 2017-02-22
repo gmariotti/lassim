@@ -88,29 +88,29 @@ def parse_peripherals_data(network: NetworkSystem, files: InputFiles,
     """
 
     logger = logging.getLogger(__name__)
-    core_perturbations = parse_perturbations_data(core_files.core_pert)
+    core_perturbations = None
+    if core_files.core_pert is not None:
+        core_perturbations = parse_perturbations_data(core_files.core_pert)
     gene_input_data = [parse_patient_data(filename) for filename in files.data]
 
     tfacts = [tfact for tfact in network.core.tfacts]
-    for data in gene_input_data:
-        data_tfacts = data.index.values.tolist()
-        if tfacts != data_tfacts:
-            message = "Transcription factors in the data are different from " \
-                      "the one in the network."
-            logger.error(message)
-            logger.error("Data {}".format(data_tfacts))
-            logger.error("Network {}".format(tfacts))
-            raise AttributeError(message)
 
-    # tries to parse the perturbations data. If an OSError is raised, usually
-    # for a missing file, the perturbations data are assumed not present.
-    genes_perturbations = check_genes_perturbations(files, tfacts)
+    # checks for genes perturbations only if the core perturbations are present
+    genes_perturbations = None
+    if core_perturbations is not None:
+        # tries to parse the perturbations data. If an OSError is raised,
+        # usually for a missing file, the perturbations data are assumed
+        # not present.
+        genes_perturbations = check_genes_perturbations(files, tfacts)
 
     times = parse_time_sequence(files.times)
-    for gene, reactions in network.reactions.viewitems():
+    for gene, reactions in network.from_reactions_to_ids():
+        gene_name = network.get_gene_from_id(gene)
         try:
             # extract the mean and the sigma for the current gene
-            gene_data, gene_sigma = parse_peripheral_data(gene_input_data, gene)
+            gene_data, gene_sigma = parse_peripheral_data(
+                gene_input_data, gene_name
+            )
         except KeyError:
             logger.error("Searched for gene {} in data but not found."
                          "Will be skipped".format(gene))
@@ -130,7 +130,7 @@ def parse_peripherals_data(network: NetworkSystem, files: InputFiles,
             gene_data, gene_sigma, times.copy(), gene_pert, y0_gene
         )
         per_core_data = PeripheralWithCoreData(
-            peripheral_data, core_data, core_perturbations.copy(),
+            peripheral_data, core_data.values, core_perturbations.values,
             y0_combined, len(reactions), reactions
         )
         yield gene, per_core_data
@@ -163,7 +163,7 @@ def check_genes_perturbations(files: InputFiles, tfacts: List[str]
     # of the core system
     if genes_perturbations is not None:
         # doesn't need to drop the source column because is at the index now.
-        pert_columns = genes_perturbations.columns.value.tolist()
+        pert_columns = genes_perturbations.columns.tolist()
         if pert_columns != tfacts:
             message = "Transcription factors in the perturbations are " \
                       "different from the one in the network."
@@ -212,9 +212,10 @@ def set_ode_y0(gene_data: Vector, core_files: CoreFiles, core_data: pd.DataFrame
         and the value of y0 for the gene.
     """
 
-    core_y0 = parse_y0_data(core_data, core_files.core_y0)
+    core_y0 = parse_y0_data(core_data, core_files.core_y0).tolist()
     gene_y0 = gene_data[0]
-    y0_combined = np.array(core_y0.tolist() + gene_y0.tolist, dtype=Float)
+    core_y0.append(gene_y0)
+    y0_combined = np.array(core_y0, dtype=Float)
     return y0_combined, gene_y0
 
 
@@ -256,10 +257,9 @@ def problem_setup(data: PeripheralWithCoreData, context: LassimContext
         dim=(2 + data.num_react),
         bounds=default_bounds(1, data.num_react),
         vector_map=generate_reactions_vector(
-            data.reactions, data.core_data
+            data.reactions, data.core_data, core_net.num_tfacts
         ), core_data=generate_core_vector(
-            data.core_data, core_net.num_tfacts, data.num_react,
-            data.reactions
+            data.core_data, core_net.num_tfacts, data.reactions
         ))
 
     return factory, start_problem

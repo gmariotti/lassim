@@ -207,14 +207,14 @@ def parse_peripherals_config(args) -> Tuple[ConfigurationParser, InputFiles,
     ).define_optimization_section().define_output_section(
     ).define_logger_section()
 
-    config.parse_logger_section("Logging", LoggerSetup)
+    config.parse_logger_section("Logging", LoggerSetup())
 
     files = config.parse_section("Input Data", InputFiles, input_validity_check)
     core_files = config.parse_section(
         "Core Files", CoreFiles, core_input_check
     )
     is_pert = False
-    if files.perturbations is not None and core_files.perturbations is not None:
+    if files.perturbations is not None and core_files.core_pert is not None:
         is_pert = True
 
     extra = config.parse_section("Extra", InputExtra, extra_conversion)
@@ -277,6 +277,6 @@ def peripheral_configuration_example(ini_file: str):
 
 
 def check_file_validity(filename: str, logger: logging.Logger):
-    if not os.path.isfile(filename):
+    if filename is not None and not os.path.isfile(filename):
         logger.error("File {} doesn't exist.".format(filename))
         raise RuntimeError("See log for more information.")

@@ -93,7 +93,8 @@ class CoreProblem(LassimProblem):
         solution_vector = np.fromiter(x, dtype=Float)
         results = CoreProblem._s_ode_function(
             self.y0, self._time, solution_vector,
-            self.vector_map, self.vector_map_mask, self._size, self._result_mem
+            self.vector_map, self.vector_map_mask, self._size,
+            self._result_mem
         )
         norm_results = np.divide(results, np.amax(results, axis=0))
         cost = np.sum(np.divide(np.power(
@@ -182,11 +183,12 @@ class CoreProblemFactory(LassimProblemFactory):
 
     def __init__(self, cost_data: Tuple[Vector, ...], y0: Vector,
                  ode_function: Callable[
-                     [Vector, Vector, Vector, Vector, Vector, int], Vector],
+                     [Vector, Vector, Vector, Vector, Vector,
+                      int, Vector], Vector],
                  pert_function: Callable[
                      [Vector, int, Vector, Vector, Vector, Vector, int,
-                      Callable[[Vector, Vector, Vector, Vector, Vector, int],
-                               Vector]], float],
+                      Callable[[Vector, Vector, Vector, Vector, Vector,
+                                int, Vector], Vector]], float],
                  pert_factor: float):
         CoreProblem._s_ode_function = ode_function
         # divides data considering presence or not of perturbations data
@@ -204,11 +206,12 @@ class CoreProblemFactory(LassimProblemFactory):
     @classmethod
     def new_instance(cls, cost_data: Tuple[Vector, ...], y0: Vector,
                      ode_function: Callable[
-                         [Vector, Vector, Vector, Vector, Vector, int], Vector],
+                         [Vector, Vector, Vector, Vector, Vector,
+                          int, Vector], Vector],
                      pert_function: Callable[
                          [Vector, int, Vector, Vector, Vector, Vector, int,
-                          Callable[[Vector, Vector, Vector, Vector, Vector, int,
-                                    Vector], Vector]], float] = None,
+                          Callable[[Vector, Vector, Vector, Vector, Vector,
+                                    int, Vector], Vector]], float] = None,
                      pert_factor: float = 0) -> 'CoreProblemFactory':
         """
         Builds a factory for the generation of

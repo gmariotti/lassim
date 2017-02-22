@@ -35,7 +35,7 @@ def serialize_solution(solution: BaseSolution, filename: str, directory: str,
     :raise RuntimeWarning: If the file exist and override is set to False.
     """
 
-    path = directory + "/" + filename
+    path = os.path.join(directory, filename)
     if not override and os.path.isfile(path):
         raise RuntimeWarning("File {} already exist.".format(path))
     option = "w"
@@ -150,5 +150,5 @@ class DirectoryCSVSolutionsHandler(SolutionsHandler):
         for i in range(num_to_print):
             self._handler.handle_solutions(
                 SortedList(solutions[i:i + 1]),
-                dirname + "/" + name_creator(i + 1)
+                os.path.join(dirname, name_creator(i + 1))
             )

@@ -245,7 +245,7 @@ def parse_y0_data(data: pd.DataFrame, filename: str, sep: str = "\t"
     :raise OSError: If the file doesn't exist.
     """
 
-    y0 = pd.read_csv(filename, sep=sep)
+    y0 = pd.read_csv(filename, sep=sep, header=None)
 
     if y0.shape[1] != data.shape[0]:
         logging.getLogger(__name__).error(

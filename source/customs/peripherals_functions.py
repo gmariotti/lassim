@@ -4,6 +4,7 @@ from typing import Tuple, Callable, Optional
 
 import numpy as np
 from sortedcontainers import SortedDict
+from sortedcontainers import SortedSet
 
 from core.problems.network_problem import NetworkProblemFactory, NetworkProblem
 from core.solutions.peripheral_solution import PeripheralSolution
@@ -39,8 +40,8 @@ def default_bounds(num_genes: int, num_react: int):
     return lower_bounds, upper_bounds
 
 
-def remove_lowest_reaction(solution_vector: Vector, reactions: SortedDict
-                           ) -> Tuple[Vector, SortedDict]:
+def remove_lowest_reaction(solution_vector: Vector, reactions: SortedSet,
+                           gene: str) -> Tuple[Vector, SortedSet]:
     """
     From a solution vector removes the reaction with the lowest absolute value
     and generates a new dictionary with all the reactions except the one
@@ -48,83 +49,72 @@ def remove_lowest_reaction(solution_vector: Vector, reactions: SortedDict
 
     :param solution_vector: The numpy.ndarray representing an optimization
         solution.
-    :param reactions: A dictionary containing the set of reactions for each
-        gene.
-    :return: Tuple containing the solution_vector and the reactions dictionary
+    :param reactions: The set of reactions for a gene.
+    :param gene: Name of the current gene.
+    :return: Tuple containing the solution_vector and the reactions set
         without the reaction removed.
     """
 
-    num_genes = len(reactions.keys())
-    absolute_k = np.absolute(solution_vector[num_genes * 2:])
+    absolute_k = np.absolute(solution_vector[2:])
     min_index = np.argmin(absolute_k)
     if min_index.size > 1:
         min_index = min_index[0]
     reactions = deepcopy(reactions)
 
-    count = 0
-    for key, value in reactions.viewitems():
-        if (min_index - count) < len(value):
-            val_removed = value.pop(min_index - count)
-            logging.getLogger(__name__).info(
-                "Removed connection={} from gene={}".format(val_removed, key)
-            )
-            index_to_remove = min_index + 2 * num_genes
-            return np.delete(solution_vector, index_to_remove), reactions
-        else:
-            count += len(value)
-    raise IndexError("Index {} to remove not found!!".format(min_index))
+    try:
+        val_removed = reactions.pop(min_index)
+        logging.getLogger(__name__).info(
+            "Removed connection={} from gene={}".format(val_removed, gene)
+        )
+        index_to_remove = min_index + 2
+        return np.delete(solution_vector, index_to_remove), reactions
+    except IndexError:
+        raise IndexError("Index {} to remove not found!!".format(min_index))
 
 
-def generate_core_vector(core_data: Vector, num_tf: int, num_react_core: int,
-                         genes_reactions: SortedDict) -> Tuple2V:
+# FIXME
+def generate_core_vector(core_data: Vector, num_tf: int,
+                         genes_reactions: SortedSet) -> Tuple2V:
     """
-    Used for generating a core vector needed in NetworkProblem instances.
+    Used for generating a core vector needed in NetworkProblem instances. Core
+    reactions not present.
 
     :param core_data: Represents the data for the core system. It must be a 2D
         matrix, with each row representing the data for a transcription factor.
         Each row must be in the format: [lambda, vmax, k1,...,kn]
     :param num_tf: Number of transcription factors in the core.
-    :param num_react_core: Number of reactions inside the core.
     :param genes_reactions: Dictionary containing the reactions between the
         genes and the core.
     :return: Tuple containing a vector in the format:
-        [lambda_1,..,lambda_#tf, lambda_g1, lambda_gm,
-        vmax_1,..,vmax_#tf,vmax_g1,..,vmax_gn,
-        react_1,..,react_#creact, react_g1,..,react_#greact] and this boolean
-        mask. Each data related to the core is the one from the core_data, while
-        the data related to genes are all set to numpy.inf. The mask represents
-        which data are numpy.inf and which are not.
+        [lambda_1,..,lambda_#tf, lambda_gene,
+        vmax_1,..,vmax_#tf,vmax_gene,
+        react_gene1,..,react_gene#tf] and its boolean mask for discriminating
+        the genes data. Each data related to the core is the one from the
+        core_data, while the data related to the gene are all set to numpy.inf.
+        The mask represents which data are numpy.inf and which are not.
     """
 
     # is the same value for vmax
-    num_genes = len(genes_reactions.keys())
-    tot_lambdas = num_tf + num_genes
-    num_genes_reactions = len([val
-                               for gene_set in genes_reactions.values()
-                               for val in gene_set])
-    core_vector = np.zeros(
-        tot_lambdas * 2 + num_react_core + num_genes_reactions
-    )
+    tot_lambdas = num_tf + 1
+    # the peripheral can have max num_tf reactions
+    num_genes_reactions = len(genes_reactions)
+    core_vector = np.zeros(tot_lambdas * 2 + num_genes_reactions)
 
-    # change the values of lambdas and vmax with the one in the core data
+    # changes the values of lambdas and vmax with the one in the core data
     core_vector[:num_tf] = core_data[:, 0]
-    core_vector[num_tf + num_genes: num_tf * 2 + num_genes] = core_data[:, 1]
+    core_vector[num_tf + 1: num_tf * 2 + 1] = core_data[:, 1]
 
-    # set the values for k
-    k_start = num_tf * 2 + num_genes * 2
-    k_core = core_data[:, 2:]
-    core_vector[k_start: k_start + num_react_core] = k_core[k_core != 0]
-
-    # change the values for the genes data to np.inf
-    core_vector[num_tf: num_tf + num_genes] = np.inf
-    core_vector[num_tf * 2 + num_genes: k_start] = np.inf
-    core_vector[k_start + num_react_core:] = np.inf
+    # changes the values for the genes data to 0
+    # in order lambda, vmax and num_tf*reactions
+    core_vector[num_tf: num_tf + 1] = np.inf
+    core_vector[num_tf * 2 + 1: num_tf * 2 + 2] = np.inf
+    core_vector[num_tf * 2 + 2:] = np.inf
 
     return core_vector, core_vector == np.inf
 
 
-def generate_reactions_vector(genes_reactions: SortedDict, core_data: Vector,
-                              dt_react=Float) -> Tuple2V:
+def generate_reactions_vector(gene_reactions: SortedSet, core_data: Vector,
+                              num_tf: int, dt_react=Float) -> Tuple2V:
     """
     From a reactions map and the core data, generates the corresponding numpy
     vector for the reactions of core and genes and its boolean mask. The
@@ -133,27 +123,25 @@ def generate_reactions_vector(genes_reactions: SortedDict, core_data: Vector,
     factors. The values are 0 if the reaction is not present and numpy.inf
     if it is.
 
-    :param genes_reactions: Reactions map for the genes in respect to the core.
+    :param gene_reactions: Set of reactions for a gene in respect to the core.
     :param core_data: Represents the data for the core system. It must be a 2D
         matrix, with each row representing the data for a transcription factor.
         Each row must be in the format: [lambda, vmax, k1,...,kn]
+    :param num_tf: Number of transcription factors in the core.
     :param dt_react: The type of numpy array you want to build.
     :return: Tuple containing the reaction vector and its corresponding mask.
     """
 
     reacts = []
-    # number of rows is the number of transcription factors
-    num_tf = core_data.shape[0]
-    for gene, react_set in genes_reactions.iteritems():
-        vector = np.zeros(num_tf, dtype=dt_react)
-        vector[react_set] = np.inf
-        reacts.append(vector.tolist())
+    vector = np.zeros(num_tf + 1, dtype=dt_react)
+    vector[gene_reactions] = np.inf
+    reacts.append(vector.tolist())
+    # adds an extra reaction set to 0 in each row
+    core_data = np.insert(core_data, num_tf + 2, 0, axis=1)
     core_reacts_flatten = [val for row in core_data
                            for val in row[2:]]
-    peripheral_reacts_flatten = [val for sublist in reacts
-                                 for val in sublist]
     np_reacts = np.array(
-        core_reacts_flatten + peripheral_reacts_flatten, dtype=dt_react
+        core_reacts_flatten + vector.tolist(), dtype=dt_react
     )
 
     return np_reacts, np_reacts == np.inf
@@ -186,28 +174,30 @@ def iter_function(core_data: Vector, num_tf: int, num_core_react: int
         react_mask = solution.react_mask
         if react_mask[react_mask].size > 0:
             # it means that at least one reaction is present
+            # FIXME - reactions are SortedSet and are converted to SortedDict
+            # at the end
             reactions = solution.reactions_ids
             reduced_vect, new_reactions = remove_lowest_reaction(
-                solution.solution_vector, reactions
+                solution.solution_vector, reactions, solution.gene_name
             )
             new_core, core_mask = generate_core_vector(
-                core_data, num_tf, num_core_react, new_reactions
+                core_data, num_tf, reactions
             )
             new_react, new_mask = generate_reactions_vector(
-                new_reactions, core_data
+                new_reactions, core_data, num_tf
             )
-            num_genes = len(new_reactions.keys())
-            num_genes_reactions = len([react
-                                       for r_set in new_reactions.values()
-                                       for react in r_set])
+            num_genes_reactions = len(new_reactions)
 
             new_problem = factory.build(
-                dim=num_genes * 2 + num_genes_reactions,
-                bounds=default_bounds(num_genes, num_genes_reactions),
+                dim=2 + num_genes_reactions,
+                bounds=default_bounds(1, num_genes_reactions),
                 vector_map=(new_react, new_mask), known_sol=[reduced_vect],
                 core_data=(new_core, core_mask)
             )
-            return new_problem, new_reactions, True
+            gene_reactions_dict = SortedDict({
+                solution.gene_name: new_reactions
+            })
+            return new_problem, gene_reactions_dict, True
         else:
             return None, SortedDict(), False
 

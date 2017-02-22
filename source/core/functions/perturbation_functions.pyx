@@ -93,21 +93,23 @@ cpdef double perturbation_func_sequential(np.ndarray[double, ndim=2] pert_data,
 @cython.wraparound(False)
 @cython.nonecheck(False)
 @cython.cdivision(True)
-cpdef double perturbation_peripherals(np.ndarray[double] pert_data, int size,
-                                      np.ndarray[double] y0,
-                                      np.ndarray[double] sol_vector,
-                                      np.ndarray[double, ndim=2] pert_core,
-                                      np.ndarray[double] vector_map,
-                                      np.ndarray vector_map_mask, ode):
+cpdef double perturbation_peripheral(np.ndarray[double] pert_data, int size,
+                                     np.ndarray[double] y0,
+                                     np.ndarray[double] sol_vector,
+                                     np.ndarray[double, ndim=2] pert_core,
+                                     np.ndarray[double] vector_map,
+                                     np.ndarray vector_map_mask, ode):
     cdef:
-        int i, immutable = size - 1
-        unsigned int t_size, sim_size = pert_data.shape[1]
+        int i
+        # the sim_size is equal to the number of data in pert_data, so equal to
+        # the number of transcription factors
+        unsigned int t_size, sim_size = pert_data.shape[0]
         double cost
         str time_str
         dict control_dict = {}
 
-        np.ndarray[double, ndim=2] perturbations = pert_core[:, :immutable]
-        np.ndarray[double, ndim=2] times = pert_core[:, immutable:]
+        np.ndarray[double, ndim=2] perturbations = pert_core[:, :sim_size]
+        np.ndarray[double, ndim=2] times = pert_core[:, sim_size:]
         np.ndarray[double, ndim=2] simulation = np.empty((sim_size, 1))
         np.ndarray[double, ndim=2] ones = np.ones((sim_size, 1))
         np.ndarray[double, ndim=2] temp_simul
@@ -125,7 +127,7 @@ cpdef double perturbation_peripherals(np.ndarray[double] pert_data, int size,
     # 1 -> [v1 v2 ... 1]
     # ....
     # n-1 -> [v1 v2 v3 ... vn-1]
-    for i in range(size):
+    for i in range(sim_size):
         time_i = times[i]
         # FIXME - find a better way
         time_str = str(time_i)
@@ -147,15 +149,15 @@ cpdef double perturbation_peripherals(np.ndarray[double] pert_data, int size,
         # from each simulation the only value to save is the one related to the
         # peripheral, not the ones related to the core.
         simulation[i] = np.divide(
-            temp_simul[t_size - 1][immutable],
-            control_dict[time_str][t_size - 1][immutable]
+            temp_simul[t_size - 1][sim_size],
+            control_dict[time_str][t_size - 1][sim_size]
         )
 
     return simulation_evaluation(simulation, ones, pert_data)
 
 cdef simulation_evaluation(np.ndarray[double, ndim=2] simulation,
-                                  np.ndarray[double, ndim=2] ones,
-                                  np.ndarray[double] data):
+                           np.ndarray[double, ndim=2] ones,
+                           np.ndarray[double] data):
     np.subtract(simulation, ones, simulation)
     simulation[simulation > 2] = 2
 

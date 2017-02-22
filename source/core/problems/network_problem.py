@@ -26,6 +26,8 @@ class NetworkProblem(LassimProblem):
     _s_dim = 0
     _s_bounds = ([], [])
     _s_cost_data = (np.empty(1), np.empty(1), np.empty(1))
+    # FIXME - is not the correct name because it doesn't contain the reactions
+    # of the core
     _s_core_data = (np.empty(1), np.empty(1))
     _s_map_tuple = (np.empty(1), np.empty(1))
     _s_y0 = np.empty(1)
@@ -67,7 +69,7 @@ class NetworkProblem(LassimProblem):
                     self._net_data.shape, self._sigma.shape
                 ))
         self._core_data, self._core_mask = NetworkProblem._s_core_data
-        if self._core_data.shape != self._core_mask:
+        if self._core_data.shape != self._core_mask.shape:
             raise ValueError(
                 "Core data shape {} is incompatible with mask shape {}".format(
                     self._core_data.shape, self._core_mask.shape
@@ -86,6 +88,7 @@ class NetworkProblem(LassimProblem):
         # these variables are used for performance efficiency
         self._result_mem = np.empty(self._size)
         self._cost_mem = np.empty(self._net_data.shape)
+        self._res_pos = self._size - 1
 
     def _objfun_impl(self, x):
         """
@@ -196,11 +199,12 @@ class NetworkProblemFactory(LassimProblemFactory):
 
     def __init__(self, cost_data: Tuple[Vector, ...], y0: Vector,
                  ode_function: Callable[
-                     [Vector, Vector, Vector, Vector, Vector, int], Vector],
+                     [Vector, Vector, Vector, Vector, Vector,
+                      int, Vector], Vector],
                  pert_function: Callable[
                      [Vector, int, Vector, Vector, Vector, Vector, int,
-                      Callable[[Vector, Vector, Vector, Vector, Vector, int],
-                               Vector]], float],
+                      Callable[[Vector, Vector, Vector, Vector, Vector,
+                                int, Vector], Vector]], float],
                  pert_factor: float):
         NetworkProblem._s_ode_function = ode_function
         # divides data considering presence or not of perturbations data
@@ -219,11 +223,12 @@ class NetworkProblemFactory(LassimProblemFactory):
     @classmethod
     def new_instance(cls, cost_data: Tuple[Vector, ...], y0: Vector,
                      ode_function: Callable[
-                         [Vector, Vector, Vector, Vector, Vector, int], Vector],
+                         [Vector, Vector, Vector, Vector, Vector,
+                          int, Vector], Vector],
                      pert_function: Callable[
                          [Vector, int, Vector, Vector, Vector, Vector, int,
-                          Callable[[Vector, Vector, Vector, Vector, Vector, int,
-                                    Vector], Vector]], float] = None,
+                          Callable[[Vector, Vector, Vector, Vector, Vector,
+                                    int, Vector], Vector]], float] = None,
                      pert_factor: float = 0) -> 'NetworkProblemFactory':
         """
         Creates a new instance of a NetworkProblemFactory. Use this method
@@ -275,5 +280,4 @@ class NetworkProblemFactory(LassimProblemFactory):
         if not self.__is_pert:
             return NetworkProblem(known_sol=known_sol)
         else:
-            # TODO NetworkWithPerturbationsProblem
-            raise Exception()
+            return NetworkWithPerturbationsProblem(known_sol=known_sol)

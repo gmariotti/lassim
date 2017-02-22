@@ -5,12 +5,14 @@ from typing import Tuple, List, Callable
 
 import numpy as np
 import pandas as pd
+import sys
 from PyGMO import topology
+from sortedcontainers import SortedDict
 from sortedcontainers import SortedList
 
 from core.factories import OptimizationFactory
 from core.functions.common_functions import odeint1e8_lassim
-from core.functions.perturbation_functions import perturbation_peripherals
+from core.functions.perturbation_functions import perturbation_peripheral
 from core.handlers.csv_handlers import DirectoryCSVSolutionsHandler
 from core.lassim_context import LassimContext, OptimizationArgs
 from core.solutions.peripheral_solution import PeripheralSolution
@@ -44,7 +46,7 @@ def peripherals_job(files: InputFiles, core_files: CoreFiles,
     network = create_network(files.network, core_files.core_system)
     core = network.core
     context = LassimContext(
-        network, main_args, odeint1e8_lassim, perturbation_peripherals,
+        network, main_args, odeint1e8_lassim, perturbation_peripheral,
         PeripheralSolution, sec_args
     )
     # parse the peripherals data just once, in order to improve the performance
@@ -56,7 +58,7 @@ def peripherals_job(files: InputFiles, core_files: CoreFiles,
     )
     optimization_builder = OptimizationFactory.new_base_optimization(
         context.primary_first.type,
-        iter_function(core_data, core.num_tfacts, core.react_count)
+        iter_function(core_data.values, core.num_tfacts, core.react_count)
     )
     headers = ["source", "lambda", "vmax"] + [tfact for tfact in core.tfacts]
 
@@ -86,7 +88,8 @@ def peripherals_job(files: InputFiles, core_files: CoreFiles,
         )
 
         optimization = optimization_builder.build(
-            context, prob_factory, start_problem, gene_data.reactions,
+            context, prob_factory, start_problem,
+            SortedDict({gene: gene_data.reactions}),
             handler, logging.getLogger(__name__)
         )
         solutions = optimization.solve(topol=topology.ring())
@@ -117,6 +120,8 @@ def prepare_peripherals_job(config: ConfigurationParser, files: InputFiles,
             "network", list_files[i]
         ).add_section("Output").add_key_value(
             "best result", list_files[i]
+        ).add_section("Extra").add_key_value(
+            "num tasks", str(1)
         ).build()
         network_subsets[i].to_csv(list_files[i], sep="\t", index=False)
     return list_files, list_config
@@ -129,16 +134,21 @@ def start_jobs(config_files: List[str]):
 
     processes = []
     for config in config_files:
-        process = subprocess.Popen(["lassim_peripherals.py", config])
+        python = sys.executable
+        process = subprocess.Popen([
+            python, os.path.join(os.getcwd(), "source/lassim_peripherals.py"),
+            config
+        ])
         processes.append(process)
     for process in processes:
         process.wait()
 
 
-def merge_results(network_files: List[str], output_filename: str):
+def merge_results(network_files: List[str], output: OutputFiles):
     results = []
     for file in network_files:
         results.append(pd.read_csv(file, sep="\t"))
+    output_filename = os.path.join(output.directory, output.filename)
     merged_result = pd.concat(results, ignore_index=True)
     merged_result.to_csv(output_filename, sep="\t", index=False)
     logging.getLogger(__name__).info(
@@ -178,7 +188,7 @@ def lassim_peripherals():
             config, files, core_files, extra.num_tasks
         )
         start_jobs(config_files)
-        merge_results(network_files, output.filename)
+        merge_results(network_files, output)
         cleaning_temps(config_files, network_files)
 
 
