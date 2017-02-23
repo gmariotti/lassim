@@ -44,8 +44,11 @@ class PeripheralSolution(BaseSolution):
         #        int(self.react_mask.shape[0] / num_tfacts)
         p_lambda = self.solution_vector[0]
         p_vmax = self.solution_vector[1]
-        p_react = self.react_vect[num_tfacts * num_tfacts:].copy()
-        p_mask = self.react_mask[num_tfacts * num_tfacts:]
+        # each transcription factor has #tfacts + 1 reactions
+        tfacts_react_count = (num_tfacts + 1) * num_tfacts
+        # -1 because the gene cannot have a reaction with itself
+        p_react = self.react_vect[tfacts_react_count:-1].copy()
+        p_mask = self.react_mask[tfacts_react_count:-1]
         p_react[p_mask] = self.solution_vector[2:]
         p_lambda_vmax = np.array([self.gene_name, p_lambda, p_vmax])
         matrix = np.append(p_lambda_vmax, p_react)
@@ -55,7 +58,7 @@ class PeripheralSolution(BaseSolution):
     @property
     def reactions_ids(self) -> SortedSet:
         # FIXME - don't override a SortedDict property with a SortedSet
-        return self.reactions_ids[self.gene_name]
+        return self._reactions_ids[self.gene_name]
 
     def _get_gene_name(self):
         raise RuntimeError("Monkey patch it!")

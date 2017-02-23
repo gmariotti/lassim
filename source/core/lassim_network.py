@@ -239,8 +239,8 @@ class NetworkSystem(LassimNetwork):
             key and the set of transcription factors that regulates it as value.
         :param core: A CoreSystem instance containing the Core of this network.
         :param correction: To be used in case genes with no transcription
-            factors in their set should have a new set with all the transcription
-            factors in the core.
+            factors in their set should have a new set with all the
+            transcription factors in the core.
         """
 
         self._network = genes_net
@@ -306,6 +306,27 @@ class NetworkSystem(LassimNetwork):
         for gene, reactions in self.reactions.viewitems():
             reactions_ids = SortedSet([tfacts_dict[tf] for tf in reactions])
             yield genes_ids[gene], reactions_ids
+
+    def get_gene_from_id(self, gene_id: int):
+        """
+        Returns the name of the gene based on the ID assigned to it.
+
+        :param gene_id: ID of a gene in the network.
+        :return: Gene name based on the ID.
+        """
+        cache = getattr(self, "gene_cache", SortedDict())
+        try:
+            gene_name = cache[gene_id]
+        except KeyError:
+            for ident, gene in self.from_ids_to_genes():
+                if ident == gene_id:
+                    cache[gene_id] = gene
+                    gene_name = gene
+                    break
+            if gene_id not in cache:
+                raise RuntimeError("Gene id {} not found".format(gene_id))
+        setattr(self, "gene_cache", cache)
+        return gene_name
 
     @property
     def core(self) -> CoreSystem:

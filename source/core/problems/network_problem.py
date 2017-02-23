@@ -82,13 +82,14 @@ class NetworkProblem(LassimProblem):
         lower_bounds, upper_bounds = NetworkProblem._s_bounds
         self.set_bounds(lower_bounds, upper_bounds)
 
-        if known_sol is not None:
-            self.best_x = [vector.tolist() for vector in known_sol]
-
         # these variables are used for performance efficiency
         self._result_mem = np.empty(self._size)
         self._cost_mem = np.empty(self._net_data.shape)
         self._res_pos = self._size - 1
+
+        # save previously found best solutions
+        if known_sol is not None:
+            self.best_x = [vector.tolist() for vector in known_sol]
 
     def _objfun_impl(self, x):
         """

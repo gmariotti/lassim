@@ -41,6 +41,8 @@ def peripherals_job(files: InputFiles, core_files: CoreFiles,
                     output: OutputFiles, main_args: List[OptimizationArgs],
                     sec_args: List[OptimizationArgs]
                     ) -> Tuple[List[PeripheralSolution], List[str]]:
+    logger = logging.getLogger(__name__)
+
     # from the file corresponding to the core system, create the CoreSystem and
     # its values, then build the corresponding NetworkSystem
     network = create_network(files.network, core_files.core_system)
@@ -79,7 +81,7 @@ def peripherals_job(files: InputFiles, core_files: CoreFiles,
     # Python sucks, so I can't do this in parallel
     # optimize independently for each gene
     for gene, gene_data in peripherals_data_generator:
-
+        logger.info("Starting optimization of gene {}".format(gene))
         prob_factory, start_problem = problem_setup(gene_data, context)
         PeripheralSolution._get_gene_name = lambda x: gene
         handler = DirectoryCSVSolutionsHandler(
@@ -97,6 +99,7 @@ def peripherals_job(files: InputFiles, core_files: CoreFiles,
         # save the best one in a gene specific directory
         final_handler.handle_solutions(solutions, "{}_best".format(gene))
         best_genes_solutions.append(solutions[0])
+        logger.info("Ending optimization of gene {}".format(gene))
     return best_genes_solutions, headers
 
 

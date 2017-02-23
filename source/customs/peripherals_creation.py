@@ -80,8 +80,8 @@ def parse_peripherals_data(network: NetworkSystem, files: InputFiles,
         core system.
     :param core_data: pandas.DataFrame with the data of the core.
     :return: A generator that produces a tuple containing as first element the
-        name of the gene, and as second element an instance of PeripheralWithCoreData
-        with the data for that gene.
+        name of the gene, and as second element an instance of
+        PeripheralWithCoreData with the data for that gene.
     :raise AttributeError: If the transcription factors in the network are not
         the same as the ones in the peripherals data and/or the perturbations
         data, if present.
@@ -133,7 +133,7 @@ def parse_peripherals_data(network: NetworkSystem, files: InputFiles,
             peripheral_data, core_data.values, core_perturbations.values,
             y0_combined, len(reactions), reactions
         )
-        yield gene, per_core_data
+        yield gene_name, per_core_data
 
 
 def check_genes_perturbations(files: InputFiles, tfacts: List[str]
@@ -194,6 +194,7 @@ def parse_peripheral_data(data_list: List[pd.DataFrame], gene_name: str
     # axis = 0 gives the mean for each column
     data_mean = norm_data.mean(axis=0)
     std_dev = norm_data.std(axis=0)
+    std_dev[std_dev == 0] = std_dev.mean()
 
     return data_mean, std_dev
 
@@ -204,7 +205,8 @@ def set_ode_y0(gene_data: Vector, core_files: CoreFiles, core_data: pd.DataFrame
     Creates a vector with the starting points for the ODE system.
 
     :param gene_data: Vector containing the data for the gene.
-    :param core_files: CoreFiles instance with the name of the y0 file for the core.
+    :param core_files: CoreFiles instance with the name of the y0 file for the
+        core.
     :param core_data: Data of the core.
     :return: Vector containing the value at time 0 of transcription factors and
         gene in the following way:

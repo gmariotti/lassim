@@ -68,7 +68,7 @@ def remove_lowest_reaction(solution_vector: Vector, reactions: SortedSet,
         )
         index_to_remove = min_index + 2
         return np.delete(solution_vector, index_to_remove), reactions
-    except IndexError:
+    except (IndexError, KeyError):
         raise IndexError("Index {} to remove not found!!".format(min_index))
 
 
@@ -181,7 +181,7 @@ def iter_function(core_data: Vector, num_tf: int, num_core_react: int
                 solution.solution_vector, reactions, solution.gene_name
             )
             new_core, core_mask = generate_core_vector(
-                core_data, num_tf, reactions
+                core_data, num_tf, new_reactions
             )
             new_react, new_mask = generate_reactions_vector(
                 new_reactions, core_data, num_tf

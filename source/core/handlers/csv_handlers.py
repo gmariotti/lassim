@@ -143,7 +143,7 @@ class DirectoryCSVSolutionsHandler(SolutionsHandler):
         if dirname is None:
             dirname = self._dirname_creator(solutions, num_to_print)
 
-        directory = self._directory + "/" + dirname
+        directory = os.path.join(self._directory, dirname)
         if not os.path.isdir(directory):
             os.makedirs(directory)
 

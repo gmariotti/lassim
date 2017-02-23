@@ -8,8 +8,9 @@ from numpy.testing import assert_array_equal
 from pandas.util.testing import assert_frame_equal
 from sortedcontainers import SortedDict, SortedSet
 
-from data_management.csv_format import parse_time_sequence, parse_patient_data, \
-    parse_network, parse_core_data, parse_peripherals_network
+from data_management.csv_format import parse_time_sequence, \
+    parse_patient_data, parse_network, parse_core_data, \
+    parse_peripherals_network
 
 __author__ = "Guido Pio Mariotti"
 __copyright__ = "Copyright (C) 2016 Guido Pio Mariotti"

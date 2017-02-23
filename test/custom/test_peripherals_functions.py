@@ -184,9 +184,9 @@ class TestPeripheralsFunctions(TestCase):
         gene_reactions = SortedSet()
         expected_vector = np.array([
             2, 2, 2, 0,
-            0, 0,0,0,
-            -2, 0, -2,0,  # reactions of the core
-            0, 0, 0,0  # reactions gene 44
+            0, 0, 0, 0,
+            -2, 0, -2, 0,  # reactions of the core
+            0, 0, 0, 0  # reactions gene 44
         ])
         expected_mask = np.array([
             False, False, False, False,

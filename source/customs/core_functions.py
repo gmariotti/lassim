@@ -121,8 +121,8 @@ def iter_function(factory: CoreProblemFactory, solution: CoreSolution
     :param solution: The current LassimSolution to use for building the new
         problem.
     :return: If a new iteration can be performed, it returns the new problem,
-        its reactions dictionary and True. Otherwise returns None, an empty dict and
-        False.
+        its reactions dictionary and True. Otherwise returns None, an empty dict
+        and False.
     """
 
     react_mask = solution.react_mask
